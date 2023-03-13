@@ -74,10 +74,7 @@ namespace Rock.Jobs
                 // Collect the DataViews with persisted schedules that do not have a last refresh date or it has been at least an hour since they were updated. 
                 var anHourAgo = currentDateTime.AddHours( -1 );
                 var persistedScheduleDataViewIds = new DataViewService( rockContextList ).Queryable()
-                    .Where( a => a.PersistedScheduleId.HasValue )
-                        .Where( a =>
-                            ( a.PersistedLastRefreshDateTime == null ||
-                              a.PersistedLastRefreshDateTime.Value <= anHourAgo ) );
+                    .Where( a => a.PersistedScheduleId.HasValue && ( a.PersistedLastRefreshDateTime == null || a.PersistedLastRefreshDateTime.Value <= anHourAgo ) );
 
                 // For DataViews with schedules that have not been persisted in the last hour,
                 // check to see if they are due to be persisted, and add them to the expired list if they are.
