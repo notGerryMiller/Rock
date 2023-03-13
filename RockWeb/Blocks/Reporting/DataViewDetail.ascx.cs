@@ -899,7 +899,7 @@ $(document).ready(function() {
                 hlblPersisted.Visible = true;
                 hlblPersisted.Text = string.Format( "Persisted {0}", dataView.PersistedLastRefreshDateTime.ToElapsedString() );
             }
-            else if (dataView.PersistedLastRefreshDateTime.HasValue && dataView.PersistedScheduleId.HasValue )
+            else if ( dataView.PersistedLastRefreshDateTime.HasValue && dataView.PersistedScheduleId.HasValue )
             {
                 hlblPersisted.Visible = true;
                 hlblPersisted.Text = string.Format( "Persisted {0}", dataView.PersistedSchedule.FriendlyScheduleText );
@@ -1620,15 +1620,20 @@ $(document).ready(function() {
 
         private void SetPersistenceScheduleType()
         {
-            if ( rblPersistenceSchedule.SelectedValueAsEnum<PersistedScheduleType>() == PersistedScheduleType.Unique )
+            if ( rblPersistenceSchedule.SelectedValueAsEnumOrNull<PersistedScheduleType>() == PersistedScheduleType.Unique )
             {
                 spNamedSchedule.Visible = false;
                 sbUniqueSchedule.Visible = true;
             }
-            else if ( rblPersistenceSchedule.SelectedValueAsEnum<PersistedScheduleType>() == PersistedScheduleType.NamedSchedule )
+            else if ( rblPersistenceSchedule.SelectedValueAsEnumOrNull<PersistedScheduleType>() == PersistedScheduleType.NamedSchedule )
             {
                 sbUniqueSchedule.Visible = false;
                 spNamedSchedule.Visible = true;
+            }
+            else
+            {
+                sbUniqueSchedule.Visible = false;
+                spNamedSchedule.Visible = false;
             }
         }
 
