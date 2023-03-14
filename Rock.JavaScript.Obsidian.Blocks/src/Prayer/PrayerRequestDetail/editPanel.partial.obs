@@ -2,10 +2,49 @@
 <template>
     <fieldset>
         <div class="row">
-
             <div class="col-md-6">
+                <PersonPicker v-model="requestedByPersonAlias"
+                          label="Requested By" />
+                <TextBox v-model="firstName"
+                          label="First Name"
+                          rules="required" />
+                <TextBox v-model="lastName"
+                          label="Last Name"
+                          rules="required" />
+                <EmailBox v-model="email"
+                          label="Email" />
+                <DatePicker v-model="expirationDate"
+                          label="Expiration Date" />
+            </div>
+
+            <div class="col-md-3">
                 <CheckBox v-model="isActive"
                           label="Active" />
+                <CheckBoxList label="Options"
+                          v-model="optionsListValue"
+                          :items="optionsList" />
+            </div>
+
+            <div class="col-md-3">
+                <Toggle v-model="isApproved"
+                          trueText="Approved"
+                          falseText="Pending"
+                          label="Status" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <CategoryPicker v-model="category"
+                        label="Category"
+                        :multiple="false"
+                        :entityTypeGuid="prayerRequestEntityTypeGuid"
+                        rules="required" />
+                <TextBox v-model="request"
+                          label="Request"
+                          rules="required" />
+                <TextBox v-model="answer"
+                          label="Answer" />
             </div>
         </div>
 
@@ -16,7 +55,16 @@
 <script setup lang="ts">
     import { PropType, ref, watch } from "vue";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
+    import CategoryPicker from "@Obsidian/Controls/categoryPicker";
+    import DatePicker from "@Obsidian/Controls/datePicker.obs";
+    import EmailBox from "@Obsidian/Controls/emailBox";
+    import PersonPicker from "@Obsidian/Controls/personPicker";
     import CheckBox from "@Obsidian/Controls/checkBox";
+    import CheckBoxList from "@Obsidian/Controls/checkBoxList";
+    import Toggle from "@Obsidian/Controls/toggle";
+    import TextBox from "@Obsidian/Controls/textBox";
+    import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+    import { EntityType } from "@Obsidian/SystemGuids/entityType";
     import { watchPropertyChanges } from "@Obsidian/Utility/block";
     import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
     import { PrayerRequestBag } from "@Obsidian/ViewModels/Blocks/Prayer/PrayerRequestDetail/prayerRequestBag";
@@ -44,10 +92,30 @@
     const attributes = ref(props.modelValue.attributes ?? {});
     const attributeValues = ref(props.modelValue.attributeValues ?? {});
     const isActive = propertyRef(props.modelValue.isActive ?? false, "IsActive");
+    const requestedByPersonAlias = propertyRef(props.modelValue.requestedByPersonAlias ?? undefined, "RequestedByPersonAliasId");
+    const isApproved = propertyRef(props.modelValue.isApproved, "IsApproved");
+    const firstName = propertyRef(props.modelValue.firstName ?? "", "FirstName");
+    const lastName = propertyRef(props.modelValue.lastName ?? "", "LastName");
+    const email = propertyRef(props.modelValue.email ?? "", "Email");
+    const expirationDate = propertyRef(props.modelValue.expirationDate ?? "", "ExpirationDate");
+    const category = propertyRef(props.modelValue.category, "Category");
+    const request = propertyRef(props.modelValue.text, "Text");
+    const answer = propertyRef(props.modelValue.answer, "Answer");
+    const isPublic = propertyRef(props.modelValue.isPublic, "IsPublic");
+    const isUrgent = propertyRef(props.modelValue.isUrgent, "IsUrgent");
+    const allowComments = propertyRef(props.modelValue.allowComments, "AllowComments");
+
+    const optionsList: ListItemBag[] = [
+                { text: "Pending", value: "isPublic" },
+                { text: "Urgent", value: "isUrgent" },
+                { text: "Allow Comments", value: "allowComments" }
+            ];
+    const optionsListValue = ref([isPublic, isUrgent, allowComments]);
+    const prayerRequestEntityTypeGuid = EntityType.PrayerRequest;
 
     // The properties that are being edited. This should only contain
     // objects returned by propertyRef().
-    const propRefs = [isActive];
+    const propRefs = [isActive, requestedByPersonAlias, isApproved, firstName, lastName, email, expirationDate, category, request, isPublic, isUrgent, allowComments];
 
     // #endregion
 
@@ -68,6 +136,18 @@
         updateRefValue(attributes, props.modelValue.attributes ?? {});
         updateRefValue(attributeValues, props.modelValue.attributeValues ?? {});
         updateRefValue(isActive, props.modelValue.isActive ?? false);
+        updateRefValue(requestedByPersonAlias, props.modelValue.requestedByPersonAlias ?? undefined);
+        updateRefValue(isApproved, props.modelValue.isApproved);
+        updateRefValue(firstName, props.modelValue.firstName ?? "");
+        updateRefValue(lastName, props.modelValue.lastName ?? "");
+        updateRefValue(email, props.modelValue.email ?? "");
+        updateRefValue(expirationDate, props.modelValue.expirationDate ?? "");
+        updateRefValue(category, props.modelValue.category);
+        updateRefValue(request, props.modelValue.text ?? "");
+        updateRefValue(answer, props.modelValue.answer ?? "");
+        updateRefValue(isPublic, props.modelValue.isPublic);
+        updateRefValue(isUrgent, props.modelValue.isUrgent);
+        updateRefValue(allowComments, props.modelValue.allowComments);
     });
 
     // Determines which values we want to track changes on (defined in the
@@ -77,6 +157,18 @@
             ...props.modelValue,
             attributeValues: attributeValues.value,
             isActive: isActive.value,
+            requestedByPersonAlias: requestedByPersonAlias.value,
+            isApproved: isApproved.value,
+            firstName: firstName.value,
+            lastName: lastName.value,
+            email: email.value,
+            expirationDate: expirationDate.value,
+            category: category.value,
+            text: request.value,
+            answer: answer.value,
+            isPublic: isPublic.value,
+            isUrgent: isUrgent.value,
+            allowComments: allowComments.value
         };
 
         emit("update:modelValue", newValue);
