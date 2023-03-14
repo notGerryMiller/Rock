@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -211,7 +211,8 @@ namespace Rock.Blocks.Prayer
                 PrayerCount = entity.PrayerCount,
                 RequestedByPersonAlias = entity.RequestedByPersonAlias.ToListItemBag(),
                 RequestedByPersonAliasId = entity.RequestedByPersonAliasId,
-                Text = entity.Text
+                Text = entity.Text,
+                FullName = entity.FullName
             };
         }
 

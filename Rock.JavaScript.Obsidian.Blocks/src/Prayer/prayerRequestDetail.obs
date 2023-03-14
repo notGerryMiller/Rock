@@ -115,7 +115,7 @@
      * The entity name to display in the block panel.
      */
     const panelName = computed((): string => {
-        return "TODO: Fill Me In";
+        return `${prayerRequestViewBag.value?.fullName ?? ""} Prayer Request`;
     });
 
     /**
@@ -149,6 +149,16 @@
                 type: "danger"
             });
         }
+
+        labels.push({
+            title: `${prayerRequestViewBag.value?.category?.text ?? ""}`,
+            type: "default"
+        });
+
+        labels.push({
+            title: `${prayerRequestViewBag.value?.isApproved ? "Approved" : "Pending"}`,
+            type: `${prayerRequestViewBag.value?.isApproved ? "success" : "warning"}`
+        });
 
         return labels;
     });
@@ -235,7 +245,7 @@
      * Event handler for when a value has changed that has an associated
      * C# property name. This is used to detect changes to values that
      * might cause qualified attributes to either show up or not show up.
-     * 
+     *
      * @param propertyName The name of the C# property that was changed.
      */
     function onPropertyChanged(propertyName: string): void {

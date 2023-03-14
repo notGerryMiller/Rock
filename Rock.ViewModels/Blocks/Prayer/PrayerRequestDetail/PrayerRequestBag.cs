@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -204,5 +204,10 @@ namespace Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail
         /// Gets or sets the text/content of the request.
         /// </summary>
         public string Text { get; set; }
+
+        /// <summary>
+        /// Gets the FullName as it needs to be sent to the frontend
+        /// </summary>
+        public string FullName { get; set; }
     }
 }

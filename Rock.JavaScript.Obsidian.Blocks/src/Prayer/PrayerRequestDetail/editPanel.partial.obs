@@ -42,8 +42,10 @@
                         rules="required" />
                 <TextBox v-model="request"
                           label="Request"
+                          textMode="multiline"
                           rules="required" />
                 <TextBox v-model="answer"
+                          textMode="multiline"
                           label="Answer" />
             </div>
         </div>
@@ -115,7 +117,7 @@
 
     // The properties that are being edited. This should only contain
     // objects returned by propertyRef().
-    const propRefs = [isActive, requestedByPersonAlias, isApproved, firstName, lastName, email, expirationDate, category, request, isPublic, isUrgent, allowComments];
+    const propRefs = [isActive, requestedByPersonAlias, isApproved, firstName, lastName, email, expirationDate, category, request, answer, isPublic, isUrgent, allowComments];
 
     // #endregion
 

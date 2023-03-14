@@ -5,7 +5,14 @@
         <ValueDetailList :modelValue="topValues" />
 
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-12">
+                <div v-if="flagCount > 0" class="pull-right">
+                    <span class="label label-warning" tabindex="-1" data-toggle="tooltip"
+                        data-placement="auto" data-container="body" data-html="true"
+                        data-original-title="To clear the flags you'll have to re-approve this request.">
+                        <i class="fa fa-flag"></i> flagged {{ flagCount }} times
+                    </span>
+                </div>
                 <ValueDetailList :modelValue="leftSideValues" />
             </div>
 
@@ -33,7 +40,7 @@
             required: false
         },
 
-        options: {
+            options: {
             type: Object as PropType<PrayerRequestDetailOptionsBag>,
             required: true
         }
@@ -43,6 +50,7 @@
 
     const attributes = ref(props.modelValue?.attributes ?? {});
     const attributeValues = ref(props.modelValue?.attributeValues ?? {});
+    const flagCount = props.modelValue?.flagCount ?? 0;
 
     // #endregion
 
@@ -66,6 +74,26 @@
         if (!props.modelValue) {
             return valueBuilder.build();
         }
+
+        if(props.modelValue?.group) {
+            valueBuilder.addTextValue("Group", props.modelValue.group.text ?? "");
+        }
+
+        if(props.modelValue?.requestedByPersonAlias) {
+            valueBuilder.addTextValue("Requested By", props.modelValue?.requestedByPersonAlias?.text ?? "");
+        }
+
+        valueBuilder.addTextValue("Name", `${props.modelValue?.fullName ?? ""}`);
+
+        const email = props.modelValue?.email ?? "";
+        if(email) {
+            valueBuilder.addHtmlValue("Email", `<a hRockLabel ref="mailto:${email}">${email}</a>`);
+        }
+
+        valueBuilder.addHtmlValue("Request", props.modelValue?.text ?? "");
+
+        valueBuilder.addHtmlValue("Answer", props.modelValue?.answer ?? "");
+
 
         return valueBuilder.build();
     });
