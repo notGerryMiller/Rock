@@ -15,9 +15,9 @@
 <script setup lang="ts">
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import TextBox from "@Obsidian/Controls/textBox";
-    import { computed, PropType } from "vue";
-    import GridActionGroup from "./gridActionGroup.obs";
-    import { GridAction } from "./types";
+    import { PropType } from "vue";
+    import GridActionGroup from "./gridActionGroup.partial.obs";
+    import { GridAction } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         filterValue: {

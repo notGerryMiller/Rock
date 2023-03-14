@@ -9,7 +9,7 @@
 <script setup lang="ts">
     import { isPromise } from "@Obsidian/Utility/promiseUtils";
     import { computed, PropType } from "vue";
-    import { GridAction } from "./types";
+    import { GridAction } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         action: {

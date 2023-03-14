@@ -126,7 +126,7 @@ function generateBundle(srcPath, outPath, autoIndex) {
 function generateAutoBundles(srcPath, outPath, alwaysBundleExternals, minify) {
     const files = glob.sync(srcPath + "/**/*.@(js)")
         .map(f => path.normalize(f).substring(cwd.length + 1))
-        .filter(f => !f.endsWith(".d.ts") && !f.endsWith(".partial.js"));
+        .filter(f => !f.endsWith(".d.ts") && !f.endsWith(".partial.js") && !f.endsWith(".partial.obs.js"));
 
     const config = {
         input: files,
@@ -151,7 +151,7 @@ function generateAutoBundles(srcPath, outPath, alwaysBundleExternals, minify) {
             }
 
             // Check if it is a reference to a partial file.
-            if (target.endsWith(".partial.ts")) {
+            if (target.endsWith(".partial.ts") || target.endsWith(".partial.obs")) {
                 return false;
             }
 

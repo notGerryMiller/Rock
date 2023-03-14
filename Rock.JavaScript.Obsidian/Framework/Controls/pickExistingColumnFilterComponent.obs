@@ -16,7 +16,7 @@
     import TextBox from "@Obsidian/Controls/textBox";
     import { deepEqual } from "@Obsidian/Utility/util";
     import { ref, PropType, watch, computed } from "vue";
-    import { GridColumnDefinition } from "./types";
+    import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         modelValue: {

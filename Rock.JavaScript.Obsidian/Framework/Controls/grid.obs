@@ -186,11 +186,11 @@ table.table-obsidian th.grid-error > .alert {
     import Alert from "@Obsidian/Controls/alert.obs";
     import LoadingIndicator from "@Obsidian/Controls/loadingIndicator";
     import { computed, defineComponent, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
-    import GridColumnHeaderRow from "./gridColumnHeaderRow.obs";
-    import GridDataRows from "./gridDataRows.obs";
-    import GridFilterHeaderRow from "./gridFilterHeaderRow.obs";
-    import GridPagerRow from "./gridPagerRow.obs";
-    import { GridAction, GridColumnDefinition, IGridColumnFilter, ValueFormatterFunction } from "./types";
+    import GridColumnHeaderRow from "./gridColumnHeaderRow.partial.obs";
+    import GridDataRows from "./gridDataRows.partial.obs";
+    import GridFilterHeaderRow from "./gridFilterHeaderRow.partial.obs";
+    import GridPagerRow from "./gridPagerRow.partial.obs";
+    import { GridAction, GridColumnDefinition, IGridColumnFilter, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
 
@@ -469,7 +469,7 @@ table.table-obsidian th.grid-error > .alert {
         }
     });
 
-    function doTest() {
+    function doTest(): void {
         console.log("test");
     }
 

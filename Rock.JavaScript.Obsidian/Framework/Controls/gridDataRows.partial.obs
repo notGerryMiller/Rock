@@ -1,11 +1,11 @@
 <template>
-    <GridDataRow v-for="row in rows" :columns="columns" :data="row" />
+    <GridDataRow v-for="row in props.rows" :columns="props.columns" :data="row" />
 </template>
 
 <script setup lang="ts">
     import { PropType } from "vue";
-    import GridDataRow from "./gridDataRow.obs";
-    import { GridColumnDefinition } from "./types";
+    import GridDataRow from "./gridDataRow.partial.obs";
+    import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         columns: {

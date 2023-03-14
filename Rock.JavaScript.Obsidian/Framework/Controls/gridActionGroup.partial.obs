@@ -1,14 +1,13 @@
 <template>
     <div class="grid-actions">
-        <GridActionButton v-for="action in gridActions" :action="action" />
+        <GridActionButton v-for="action in props.gridActions" :action="action" />
     </div>
 </template>
 
 <script setup lang="ts">
-    import { computed, PropType } from "vue";
-    import { GridAction } from "./types";
-    import GridActionButton from "./gridActionButton.obs";
-
+    import { PropType } from "vue";
+    import { GridAction } from "@Obsidian/Types/Controls/grid";
+    import GridActionButton from "./gridActionButton.partial.obs";
 
     const props = defineProps({
         gridActions: {
