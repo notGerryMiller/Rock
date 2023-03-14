@@ -155,6 +155,10 @@
     <Compile Include="Cms\ContentCollectionCustomFieldFilterSettingsBag.cs" />
     <Compile Include="Communication\ConversationAttachmentBag.cs" />
     <Compile Include="Communication\ConversationMessageBag.cs" />
+    <Compile Include="Core\Grid\AttributeFieldDefinitionBag.cs" />
+    <Compile Include="Core\Grid\FieldDefinitionBag.cs" />
+    <Compile Include="Core\Grid\GridDataBag.cs" />
+    <Compile Include="Core\Grid\GridDefinition.cs" />
     <Compile Include="Core\NotificationMessageActionBag.cs" />
     <Compile Include="Entities\NotificationMessageTypeBag.cs" />
     <Compile Include="Engagement\AchievementCompletedMessageBag.cs" />

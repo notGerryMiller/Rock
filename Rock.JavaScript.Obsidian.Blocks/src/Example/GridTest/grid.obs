@@ -190,7 +190,9 @@ table.table-obsidian th.grid-error > .alert {
     import GridDataRows from "./gridDataRows.obs";
     import GridFilterHeaderRow from "./gridFilterHeaderRow.obs";
     import GridPagerRow from "./gridPagerRow.obs";
-    import { AttributeColumnDefinition, GridAction, GridColumnDefinition, GridData, IGridColumnFilter, ValueFormatterFunction } from "./types";
+    import { GridAction, GridColumnDefinition, IGridColumnFilter, ValueFormatterFunction } from "./types";
+    import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
+    import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
 
     type RowCacheItem = {
         quickFilterValue?: string | null;
@@ -318,7 +320,7 @@ table.table-obsidian th.grid-error > .alert {
                     continue;
                 }
 
-                const attributes = getVNodeProp<AttributeColumnDefinition[]>(node, "attributes");
+                const attributes = getVNodeProp<AttributeFieldDefinitionBag[]>(node, "attributes");
                 if (!attributes) {
                     continue;
                 }
@@ -457,7 +459,7 @@ table.table-obsidian th.grid-error > .alert {
 
     const props = defineProps({
         data: {
-            type: [Object, Function] as PropType<GridData | (() => GridData | Promise<GridData>)>,
+            type: [Object, Function] as PropType<GridDataBag | (() => GridDataBag | Promise<GridDataBag>)>,
             default: []
         },
 
@@ -636,13 +638,13 @@ table.table-obsidian th.grid-error > .alert {
 
         if (typeof props.data === "object") {
             const data = props.data;
-            rows.value = data.rows;
+            rows.value = data.rows ?? [];
             rowItemCache = {};
         }
         else if (typeof props.data === "function") {
             try {
                 const data = await props.data();
-                rows.value = data.rows;
+                rows.value = data.rows ?? [];
                 rowItemCache = {};
             }
             catch (error) {

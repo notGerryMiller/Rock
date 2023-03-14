@@ -1021,6 +1021,9 @@
     <Compile Include="Model\Group\GroupMemberRequirement\GroupMemberRequirementService.cs" />
     <Compile Include="Model\Security\RemoteAuthenticationSessionExtensions.cs" />
     <Compile Include="Model\Security\RemoteAuthenticationSessionService.cs" />
+    <Compile Include="Obsidian\UI\GridActionUrlKey.cs" />
+    <Compile Include="Obsidian\UI\GridBuilder.cs" />
+    <Compile Include="Obsidian\UI\GridBuilderExtensions.cs" />
     <Compile Include="Personalization\PersonalizationRequestFilters\EnvironmentRequestFilter.cs" />
     <Compile Include="Net\IRequest.cs" />
     <Compile Include="Personalization\PersonalizationSegmentFilter.cs" />

@@ -48,10 +48,6 @@ export type GridAction = {
     executing: boolean;
 };
 
-type GridData = {
-    rows: Record<string, unknown>[];
-};
-
 export type GridColumnDefinition = {
     /** The unique name of this column. */
     name: string;
@@ -112,14 +108,4 @@ export type FilterComponentProps = {
         type: PropType<Record<string, unknown>[]>,
         required: true
     }
-};
-
-type GridDefinition = {
-    attributeColumns?: AttributeColumnDefinition[];
-};
-
-type AttributeColumnDefinition = {
-    name?: string | null;
-
-    title?: string | null;
 };

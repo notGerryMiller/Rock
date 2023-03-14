@@ -184,6 +184,7 @@
     <Folder Include="Framework\ViewModels\Connection\" />
     <Folder Include="Framework\ViewModels\Controls\" />
     <Folder Include="Framework\ViewModels\Core\" />
+    <Folder Include="Framework\ViewModels\Core\Grid\" />
     <Folder Include="Framework\ViewModels\Crm\" />
     <Folder Include="Framework\ViewModels\Engagement\" />
     <Folder Include="Framework\ViewModels\Entities\" />
@@ -686,6 +687,10 @@
     <TypeScriptCompile Include="Framework\ViewModels\Controls\monthYearValue.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Controls\rockCacheability.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Controls\slidingDateRangeBag.d.ts" />
+    <TypeScriptCompile Include="Framework\ViewModels\Core\Grid\attributeFieldDefinitionBag.d.ts" />
+    <TypeScriptCompile Include="Framework\ViewModels\Core\Grid\fieldDefinitionBag.d.ts" />
+    <TypeScriptCompile Include="Framework\ViewModels\Core\Grid\gridDataBag.d.ts" />
+    <TypeScriptCompile Include="Framework\ViewModels\Core\Grid\gridDefinitionBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Core\notificationMessageActionBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Crm\renderedBadgeBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Engagement\achievementCompletedMessageBag.d.ts" />

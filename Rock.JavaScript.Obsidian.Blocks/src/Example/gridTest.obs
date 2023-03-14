@@ -56,7 +56,7 @@
                        field="isPublic"
                        sortField="isPublic" />
 
-        <AttributeColumns :attributes="attributeColumns" />
+        <AttributeColumns :attributes="attributeFields" />
     </Grid>
 </template>
 
@@ -66,8 +66,11 @@
     import { useConfigurationValues, useInvokeBlockAction } from "@Obsidian/Utility/block";
     import { Component, computed, defineComponent, PropType, reactive, ref, VNode, watch } from "vue";
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
+    import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
+    import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
+    import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
     import Grid from "./GridTest/grid.obs";
-    import { AttributeColumnDefinition, FilterComponentProps, GridColumnDefinition, GridData, GridDefinition, IGridColumnFilter } from "./GridTest/types";
+    import { FilterComponentProps, GridColumnDefinition, IGridColumnFilter } from "./GridTest/types";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
     import PickExistingColumnFilterComponent from "./GridTest/pickExistingColumnFilterComponent.obs";
     import { deepEqual } from "@Obsidian/Utility/util";
@@ -505,7 +508,7 @@
 
         props: {
             attributes: {
-                type: Array as PropType<AttributeColumnDefinition[]>,
+                type: Array as PropType<AttributeFieldDefinitionBag[]>,
                 default: []
             },
 
@@ -518,7 +521,7 @@
 
     // #endregion
 
-    const configuration = useConfigurationValues<{ gridDefinition: GridDefinition }>();
+    const configuration = useConfigurationValues<{ gridDefinition: GridDefinitionBag }>();
     const invokeBlockAction = useInvokeBlockAction();
 
     // eslint-disable-next-line @typescript-eslint/naming-convention,@typescript-eslint/no-unused-vars
@@ -533,15 +536,15 @@
         "false": "#cc0000"
     };
 
-    const attributeColumns = computed((): AttributeColumnDefinition[] => {
-        return configuration.gridDefinition.attributeColumns ?? [];
+    const attributeFields = computed((): AttributeFieldDefinitionBag[] => {
+        return configuration.gridDefinition.attributeFields ?? [];
     });
 
-    const loadGridData = async (): Promise<GridData> => {
-        const result = await invokeBlockAction<GridData>("GetGridData");
+    const loadGridData = async (): Promise<GridDataBag> => {
+        const result = await invokeBlockAction<GridDataBag>("GetGridData");
 
         if (result.isSuccess && result.data) {
-            const d = ref(result.data.rows);
+            const d = ref(result.data.rows ?? []);
             setTimeout(() => (d.value[0] as Record<string, Record<string, string>>)["name"]["firstName"] = "Daniel", 2000);
             return {
                 rows: d.value

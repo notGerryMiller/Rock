@@ -20,12 +20,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Entity;
 using System.Linq;
-using System.Linq.Expressions;
 
 using Rock.Attribute;
-using Rock.Blocks.Types.Mobile.Prayer;
 using Rock.Data;
 using Rock.Model;
+using Rock.Obsidian.UI;
 using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
 
@@ -48,6 +47,14 @@ namespace Rock.Blocks.Example
 
         public override object GetObsidianBlockInitialization()
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var builder = GetGridBuilder( GetGridAttributes() );
+            sw.Stop();
+
+            sw.Restart();
+            builder.BuildDefinition();
+            sw.Stop();
+
             return new
             {
                 GridDefinition = GetGridBuilder( GetGridAttributes() ).BuildDefinition()
@@ -79,45 +86,11 @@ namespace Rock.Blocks.Example
                 System.Diagnostics.Debug.WriteLine( $"Attribute load took {sw.Elapsed.TotalMilliseconds}ms." );
 
                 sw.Restart();
-                var rows = prayerRequests
-                    .Select( pr =>
-                    {
-                        var row = new Dictionary<string, object>
-                        {
-                            ["name"] = new { pr.FirstName, pr.LastName },
-                            ["email"] = pr.Email,
-                            ["enteredDateTime"] = pr.EnteredDateTime,
-                            ["expirationDateTime"] = pr.ExpirationDate,
-                            ["isUrgent"] = pr.IsUrgent,
-                            ["isPublic"] = pr.IsPublic
-                        };
-
-                        foreach ( var attrValue in pr.AttributeValues )
-                        {
-                            row[$"attr_{attrValue.Key}"] = pr.GetAttributeCondensedHtmlValue( attrValue.Key );
-                        }
-
-                        return row;
-                    } )
-                    .ToList();
-
-                sw.Stop();
-                System.Diagnostics.Debug.WriteLine( $"Manual row translation took {sw.Elapsed.TotalMilliseconds}ms." );
-
-                sw.Restart();
-                rows = GetGridBuilder( gridAttributes ).BuildRows( prayerRequests );
-
+                var data = GetGridBuilder( gridAttributes ).Build( prayerRequests );
                 sw.Stop();
                 System.Diagnostics.Debug.WriteLine( $"Row translation took {sw.Elapsed.TotalMilliseconds}ms." );
 
-                var definition = GetGridBuilder( gridAttributes ).BuildDefinition();
-
-                var gridData = new
-                {
-                    Rows = rows
-                };
-
-                return ActionOk( gridData );
+                return ActionOk( data );
             }
         }
 
@@ -135,6 +108,7 @@ namespace Rock.Blocks.Example
         private GridBuilder<PrayerRequest> GetGridBuilder( List<AttributeCache> gridAttributes )
         {
             return new GridBuilder<PrayerRequest>()
+                .UseWithBlock( BlockCache )
                 .AddField( "guid", pr => pr.Guid.ToString() )
                 .AddField( "name", pr => new { pr.FirstName, pr.LastName } )
                 .AddTextField( "email", pr => pr.Email )
@@ -149,144 +123,5 @@ namespace Rock.Blocks.Example
                 } )
                 .AddAttributeFields( gridAttributes );
         }
-    }
-
-    public class GridBuilder<T>
-    {
-        private readonly Dictionary<string, Func<T, object>> _fieldActions = new Dictionary<string, Func<T, object>>();
-
-        private readonly List<Action<GridDefinition>> _definitionActions = new List<Action<GridDefinition>>();
-
-        public GridBuilder()
-        {
-        }
-
-        public GridBuilder<T> AddPersonField( string name, Func<T, Person> valueExpression )
-        {
-            return AddField( name, row =>
-            {
-                var person = valueExpression( row );
-
-                if ( person == null )
-                {
-                    return null;
-                }
-
-                return new
-                {
-                    person.FirstName,
-                    person.NickName,
-                    person.LastName,
-                    person.PhotoUrl
-                };
-            } );
-        }
-
-        public GridBuilder<T> AddDateTimeField( string name, Func<T, DateTime?> valueExpression )
-        {
-            return AddField( name, row => valueExpression( row )?.ToRockDateTimeOffset() );
-        }
-
-        public GridBuilder<T> AddTextField( string name, Func<T, string> valueExpression )
-        {
-            return AddField( name, row => valueExpression( row ) );
-        }
-
-        public GridBuilder<T> AddAttributeFields( IEnumerable<AttributeCache> attributes )
-        {
-            if ( !typeof( IHasAttributes ).IsAssignableFrom( typeof( T ) ) )
-            {
-                throw new Exception( $"The type '{typeof( T ).FullName}' does not support attributes." );
-            }
-
-            foreach ( var attribute in attributes )
-            {
-                var key = attribute.Key;
-                var fieldKey = $"attr_{key}";
-
-                AddField( fieldKey, item =>
-                {
-                    var attributeRow = item as IHasAttributes;
-
-                    return attributeRow.GetAttributeCondensedHtmlValue( key );
-                } );
-
-                _definitionActions.Add( definition =>
-                {
-                    definition.AttributeColumns.Add( new AttributeColumnDefinition
-                    {
-                        Name = fieldKey,
-                        Title = attribute.Name
-                    } );
-                } );
-            }
-
-            return this;
-        }
-
-        public GridBuilder<T> AddField( string name, Func<T, object> valueExpression )
-        {
-            if ( _fieldActions.ContainsKey( name ) )
-            {
-            }
-
-            _fieldActions.Add( name, valueExpression );
-
-            return this;
-        }
-
-        public List<Dictionary<string, object>> BuildRows( IEnumerable<T> items )
-        {
-            var fieldKeys = _fieldActions.Keys.ToArray();
-
-            return items
-                .Select( item =>
-                {
-                    var row = new Dictionary<string, object>();
-
-                    for ( int i = 0; i < fieldKeys.Length; i++ )
-                    {
-                        var key = fieldKeys[i];
-                        var value = _fieldActions[key]( item );
-
-                        row[key] = value;
-                    }
-
-                    return row;
-                } )
-                .ToList();
-        }
-
-        public GridDefinition BuildDefinition()
-        {
-            var definition = new GridDefinition
-            {
-                AttributeColumns = new List<AttributeColumnDefinition>()
-            };
-
-            foreach ( var action in _definitionActions )
-            {
-                action( definition );
-            }
-
-            return definition;
-        }
-    }
-
-    public class GridDefinition
-    {
-        public List<AttributeColumnDefinition> AttributeColumns { get; set; }
-    }
-
-    public class AttributeColumnDefinition
-    {
-        public string Name { get; set; }
-
-        public string Title { get; set; }
-    }
-
-    public class GridData
-    {
-        public List<Dictionary<string, object>> Rows { get; set; }
     }
 }
