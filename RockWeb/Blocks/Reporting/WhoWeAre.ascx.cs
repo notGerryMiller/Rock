@@ -133,6 +133,7 @@ namespace RockWeb.Blocks.Reporting
             var rockContext = new RockContext();
             rockContext.Database.Log = strQry => Debug.WriteLine( strQry );
             var personService = new PersonService( rockContext );
+
             var qry = personService.Queryable();
             var total = qry.Count();
             var personRecordDefinedValueGuid = Rock.SystemGuid.DefinedValue.PERSON_RECORD_TYPE_PERSON.AsGuid();
@@ -142,7 +143,7 @@ namespace RockWeb.Blocks.Reporting
             alivePersonsQry = qry.Where( p => p.RecordTypeValue.Guid == personRecordDefinedValueGuid && !p.IsDeceased );
             activeAlivePersonsQry = alivePersonsQry.Where( p => p.RecordStatusValue.Guid == Rock.SystemGuid.DefinedValue.PERSON_RECORD_STATUS_ACTIVE.AsGuid() );
 
-            GetDemographics( activeAlivePersonsQry, total );
+            GetDemographics( activeAlivePersonsQry );
             GetInformationStatistics( activeAlivePersonsQry, rockContext, total );
             GetPercentOfActiveIndividualsWithAssessments( rockContext, total );
             GetPercentOfActiveRecords( alivePersonsQry, total );
@@ -151,14 +152,14 @@ namespace RockWeb.Blocks.Reporting
         /// <summary>
         /// Gets the demographics.
         /// </summary>
-        private void GetDemographics( IEnumerable<Person> persons, int total )
+        private void GetDemographics( IEnumerable<Person> persons )
         {
             var demographics = new List<DemographicItem>()
             {
                 new DemographicItem( "Gender", GetGenderLava( persons ) ),
                 new DemographicItem( "Connection Status", GetConnectionStatusLava( persons ) ),
                 new DemographicItem( "Marital Status", GetMaritalStatusLava( persons ) ),
-                new DemographicItem( "Age", GetAgeLava( persons, total ) ),
+                new DemographicItem( "Age", GetAgeLava( persons ) ),
                 new DemographicItem( "Race", GetRaceLava( persons ) ),
                 new DemographicItem( "Ethnicity", GetEthnicityLava( persons ) ),
             };
@@ -210,7 +211,7 @@ namespace RockWeb.Blocks.Reporting
         /// Gets the age lava.
         /// </summary>
         /// <returns></returns>
-        private string GetAgeLava( IEnumerable<Person> qry, int total )
+        private string GetAgeLava( IEnumerable<Person> qry )
         {
             var dataItems = new List<DataItem>();
             var peopleWithAgeQry = qry.Where( p => p.BirthDate.HasValue );
@@ -219,7 +220,7 @@ namespace RockWeb.Blocks.Reporting
             dataItems.Add( new DataItem( "0-12", zeroTo12RangeSql.ToString() ) );
 
             var thirteenToSeventeenRangeSql = peopleWithAgeQry.Count( p => p.Age >= 13 && p.Age <= 17 );
-            dataItems.Add( new DataItem( "13-17", thirteenToSeventeenRangeSql.ToString() )  );
+            dataItems.Add( new DataItem( "13-17", thirteenToSeventeenRangeSql.ToString() ) );
 
             var eighteenAndTwentyFour = peopleWithAgeQry.Count( p => p.Age >= 18 && p.Age <= 24 );
             dataItems.Add( new DataItem( "18-24", eighteenAndTwentyFour.ToString() ) );
@@ -290,7 +291,7 @@ namespace RockWeb.Blocks.Reporting
             dataItems.Add( new DataItem( "Active Email", DataItem.GetPercentage( hasActiveEmailCount, total ) ) );
 
             var mobilePhoneTypeGuid = Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid();
-            var hasMobilePhoneCount = new PhoneNumberService( rockContext ).Queryable().Count( p => p.NumberTypeValue.Guid == mobilePhoneTypeGuid   );
+            var hasMobilePhoneCount = new PhoneNumberService( rockContext ).Queryable().Count( p => p.NumberTypeValue.Guid == mobilePhoneTypeGuid );
             dataItems.Add( new DataItem( "Mobile Phone", DataItem.GetPercentage( hasMobilePhoneCount, total ) ) );
 
             var hasMaritalStatusCount = qry.Count( p => p.MaritalStatusValueId.HasValue && p.MaritalStatusValue.Value != "Unknown" );
