@@ -37,6 +37,7 @@
 
     const config = useConfigurationValues<SignUpAttendanceDetailInitializationBox>();
     const invokeBlockAction = useInvokeBlockAction();
+    const reloadBlock = useReloadBlock();
 
     // #region Values
 
@@ -104,7 +105,7 @@
 
     // #endregion
 
-    onConfigurationValuesChanged(useReloadBlock());
+    onConfigurationValuesChanged(reloadBlock);
 
     if (config.attendees?.length) {
         config.attendees
