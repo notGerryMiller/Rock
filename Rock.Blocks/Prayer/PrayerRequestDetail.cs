@@ -42,6 +42,14 @@ namespace Rock.Blocks.Prayer
 
     #region Block Attributes
 
+    [IntegerField( "Expires After (days)", "Default number of days until the request will expire.", false, 14, "", 0, AttributeKey.ExpireDays )]
+    [CategoryField( "Default Category", "If a category is not selected, choose a default category to use for all new prayer requests.", false, "Rock.Model.PrayerRequest", "", "", false, "4B2D88F5-6E45-4B4B-8776-11118C8E8269", "", 1, AttributeKey.DefaultCategory )]
+    [BooleanField( "Set Current Person To Requester", "Will set the current person as the requester. This is useful in self-entry situations.", false, order: 2 )]
+    [BooleanField( "Require Last Name", "Require that a last name be entered", true, "", 3 )]
+    [BooleanField( "Default To Public", "If enabled, all prayers will be set to public by default", false, "", 4 )]
+    [BooleanField( "Default Allow Comments Checked", "If true, the Allow Comments checkbox will be pre-checked for all new requests by default.", true, order: 5 )]
+    [BooleanField( "Require Campus", "Require that a campus be selected. The campus will not be displayed if there is only one available campus, in which case if this is set to true then the single campus is automatically used.", false, "", 6 )]
+
     #endregion
 
     [Rock.SystemGuid.EntityTypeGuid( "d1e21128-c831-4535-b8df-0ec928dcbba4" )]
@@ -61,6 +69,21 @@ namespace Rock.Blocks.Prayer
         }
 
         #endregion Keys
+
+        #region Attribute Keys
+
+        private static class AttributeKey
+        {
+            public const string RequireLastName = "RequireLastName";
+            public const string RequireCampus = "RequireCampus";
+            public const string DefaultToPublic = "DefaultToPublic";
+            public const string DefaultAllowCommentsChecked = "DefaultAllowCommentsChecked";
+            public const string SetCurrentPersonToRequester = "SetCurrentPersonToRequester";
+            public const string DefaultCategory = "DefaultCategory";
+            public const string ExpireDays = "ExpireDays";
+        }
+
+        #endregion
 
         public override string BlockFileUrl => $"{base.BlockFileUrl}.obs";
 
@@ -92,8 +115,11 @@ namespace Rock.Blocks.Prayer
         /// <returns>The options that provide additional details to the block.</returns>
         private PrayerRequestDetailOptionsBag GetBoxOptions( bool isEditable, RockContext rockContext )
         {
-            var options = new PrayerRequestDetailOptionsBag();
-
+            var options = new PrayerRequestDetailOptionsBag
+            {
+                IsLastNameRequired = GetAttributeValue( AttributeKey.RequireLastName ).AsBooleanOrNull() ?? true,
+                IsCampusRequired = GetAttributeValue( AttributeKey.RequireCampus ).AsBooleanOrNull() ?? false
+            };
             return options;
         }
 

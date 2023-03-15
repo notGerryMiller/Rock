@@ -22,4 +22,10 @@
 //
 
 export type PrayerRequestDetailOptionsBag = {
+
+    /** Gets the value of the RequireLastName block attribute */
+    isLastNameRequired?: boolean | null;
+
+    /** Gets the value of the RequireCampus block attribute */
+    isCampusRequired?: boolean | null;
 };

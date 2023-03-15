@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -19,5 +19,14 @@ namespace Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail
 {
     public class PrayerRequestDetailOptionsBag
     {
+        /// <summary>
+        /// Pass the value of the RequireLastName block attribute to the front end
+        /// </summary>
+        public bool IsLastNameRequired { get; set; }
+
+        /// <summary>
+        /// Pass the value of the RequireCampus block attribute to the front end
+        /// </summary>
+        public bool IsCampusRequired { get; set; }
     }
 }
