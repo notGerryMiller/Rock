@@ -178,6 +178,11 @@ namespace Rock.Blocks.Prayer
                 if ( box.IsEditable )
                 {
                     box.Entity = GetEntityBagForEdit( entity );
+
+                    // set the default value for new prayer request from the block properties
+                    box.Entity.AllowComments = GetAttributeValue( AttributeKey.DefaultAllowCommentsChecked ).AsBooleanOrNull() ?? true;
+                    box.Entity.IsPublic = GetAttributeValue( AttributeKey.DefaultToPublic ).AsBoolean();
+
                     box.SecurityGrantToken = GetSecurityGrantToken( entity );
                 }
                 else
@@ -199,6 +204,17 @@ namespace Rock.Blocks.Prayer
                 return null;
             }
 
+            // Get the email for the prayer request detail entity 
+            string email = "";
+            if ( !string.IsNullOrWhiteSpace( entity.Email ) )
+            {
+                email = entity.Email;
+            }
+            else if ( entity.RequestedByPersonAlias != null )
+            {
+                email = entity.RequestedByPersonAlias.Person.Email;
+            }
+
             return new PrayerRequestBag
             {
                 IdKey = entity.IdKey,
@@ -214,7 +230,7 @@ namespace Rock.Blocks.Prayer
                 CreatedByPersonAlias = entity.CreatedByPersonAlias.ToListItemBag(),
                 CreatedByPersonAliasId = entity.CreatedByPersonAliasId,
                 CreatedDateTime = entity.CreatedDateTime,
-                Email = entity.Email,
+                Email = email,
                 EnteredDateTime = entity.EnteredDateTime,
                 ExpirationDate = entity.ExpirationDate,
                 FirstName = entity.FirstName,
@@ -312,20 +328,11 @@ namespace Rock.Blocks.Prayer
             box.IfValidProperty( nameof( box.Entity.Campus ),
                 () => entity.CampusId = box.Entity.Campus.GetEntityId<Campus>( rockContext ) );
 
-            box.IfValidProperty( nameof( box.Entity.CampusId ),
-                () => entity.CampusId = box.Entity.CampusId );
-
             box.IfValidProperty( nameof( box.Entity.Category ),
                 () => entity.CategoryId = box.Entity.Category.GetEntityId<Category>( rockContext ) );
 
-            box.IfValidProperty( nameof( box.Entity.CategoryId ),
-                () => entity.CategoryId = box.Entity.CategoryId );
-
             box.IfValidProperty( nameof( box.Entity.CreatedByPersonAlias ),
                 () => entity.CreatedByPersonAliasId = box.Entity.CreatedByPersonAlias.GetEntityId<PersonAlias>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.CreatedByPersonAliasId ),
-                () => entity.CreatedByPersonAliasId = box.Entity.CreatedByPersonAliasId );
 
             box.IfValidProperty( nameof( box.Entity.CreatedDateTime ),
                 () => entity.CreatedDateTime = box.Entity.CreatedDateTime );
@@ -345,20 +352,11 @@ namespace Rock.Blocks.Prayer
             box.IfValidProperty( nameof( box.Entity.FlagCount ),
                 () => entity.FlagCount = box.Entity.FlagCount );
 
-            box.IfValidProperty( nameof( box.Entity.ForeignGuid ),
-                () => entity.ForeignGuid = box.Entity.ForeignGuid );
-
-            box.IfValidProperty( nameof( box.Entity.ForeignId ),
-                () => entity.ForeignId = box.Entity.ForeignId );
-
             box.IfValidProperty( nameof( box.Entity.ForeignKey ),
                 () => entity.ForeignKey = box.Entity.ForeignKey );
 
             box.IfValidProperty( nameof( box.Entity.Group ),
                 () => entity.GroupId = box.Entity.Group.GetEntityId<Group>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.GroupId ),
-                () => entity.GroupId = box.Entity.GroupId );
 
             box.IfValidProperty( nameof( box.Entity.IsActive ),
                 () => entity.IsActive = box.Entity.IsActive );
@@ -375,17 +373,11 @@ namespace Rock.Blocks.Prayer
             box.IfValidProperty( nameof( box.Entity.LanguageValue ),
                 () => entity.LanguageValueId = box.Entity.LanguageValue.GetEntityId<DefinedValue>( rockContext ) );
 
-            box.IfValidProperty( nameof( box.Entity.LanguageValueId ),
-                () => entity.LanguageValueId = box.Entity.LanguageValueId );
-
             box.IfValidProperty( nameof( box.Entity.LastName ),
                 () => entity.LastName = box.Entity.LastName );
 
             box.IfValidProperty( nameof( box.Entity.ModifiedByPersonAlias ),
                 () => entity.ModifiedByPersonAliasId = box.Entity.ModifiedByPersonAlias.GetEntityId<PersonAlias>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.ModifiedByPersonAliasId ),
-                () => entity.ModifiedByPersonAliasId = box.Entity.ModifiedByPersonAliasId );
 
             box.IfValidProperty( nameof( box.Entity.ModifiedDateTime ),
                 () => entity.ModifiedDateTime = box.Entity.ModifiedDateTime );
@@ -395,9 +387,6 @@ namespace Rock.Blocks.Prayer
 
             box.IfValidProperty( nameof( box.Entity.RequestedByPersonAlias ),
                 () => entity.RequestedByPersonAliasId = box.Entity.RequestedByPersonAlias.GetEntityId<PersonAlias>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.RequestedByPersonAliasId ),
-                () => entity.RequestedByPersonAliasId = box.Entity.RequestedByPersonAliasId );
 
             box.IfValidProperty( nameof( box.Entity.Text ),
                 () => entity.Text = box.Entity.Text );
