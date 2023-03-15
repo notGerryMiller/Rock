@@ -2632,6 +2632,7 @@ BEGIN
 	INNER JOIN AnalyticsSourceDate A
 	ON A.[DateKey] = P.[BirthDateKey]
 	WHERE P.[BirthDate] IS NOT NULL
+    AND P.[IsDeceased] = 0
 END
 ";
             using ( var rockContext = new RockContext() )

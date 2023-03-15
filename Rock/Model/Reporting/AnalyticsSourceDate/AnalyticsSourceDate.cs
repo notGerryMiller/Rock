@@ -488,7 +488,7 @@ namespace Rock.Model
         /// The age bracket.
         /// </value>
         [DataMember]
-        public AgeBracket AgeBracket { get; set; }
+        public AgeBracket? AgeBracket { get; set; }
 
         #endregion Entity Properties
 

@@ -30,10 +30,10 @@ namespace Rock.Migrations
         public override void Up()
         {
             AddColumn("dbo.Person", "BirthDateKey", c => c.Int());
-            AddColumn("dbo.Person", "AgeBracket", c => c.Int(nullable: false));
+            AddColumn("dbo.Person", "AgeBracket", c => c.Int());
             AddColumn("dbo.Person", "Age", c => c.Int());
             AddColumn("dbo.AnalyticsSourceDate", "Age", c => c.Int());
-            AddColumn("dbo.AnalyticsSourceDate", "AgeBracket", c => c.Int(nullable: false));
+            AddColumn("dbo.AnalyticsSourceDate", "AgeBracket", c => c.Int());
         }
         
         /// <summary>

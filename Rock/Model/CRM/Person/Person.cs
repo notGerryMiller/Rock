@@ -581,7 +581,7 @@ namespace Rock.Model
         /// <value>
         /// The age range.
         /// </value>
-        public AgeBracket AgeBracket { get; set; }
+        public AgeBracket? AgeBracket { get; set; }
 
         #endregion
 
