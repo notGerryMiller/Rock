@@ -269,7 +269,8 @@ namespace Rock.Blocks.Prayer
             }
 
             var bag = GetCommonEntityBag( entity );
-
+            bag.Text = entity.Text.ScrubHtmlAndConvertCrLfToBr();
+            bag.Answer = entity.Answer.ScrubHtmlAndConvertCrLfToBr();
             bag.LoadAttributesAndValuesForPublicView( entity, RequestContext.CurrentPerson );
 
             return bag;

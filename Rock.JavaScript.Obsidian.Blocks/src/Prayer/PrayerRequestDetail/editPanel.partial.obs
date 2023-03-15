@@ -51,13 +51,13 @@
             </div>
         </div>
 
-        <!-- <AttributeValuesContainer v-model="attributeValues" :attributes="attributes" isEditMode :numberOfColumns="2" /> -->
+        <AttributeValuesContainer v-model="attributeValues" :attributes="attributes" isEditMode :numberOfColumns="2" />
     </fieldset>
 </template>
 
 <script setup lang="ts">
     import { computed, PropType, ref, watch } from "vue";
-    // import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
+    import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
     import CategoryPicker from "@Obsidian/Controls/categoryPicker";
     import DatePicker from "@Obsidian/Controls/datePicker.obs";
     import EmailBox from "@Obsidian/Controls/emailBox";
