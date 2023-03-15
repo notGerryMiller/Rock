@@ -6,8 +6,8 @@
     "module": "ESNext"
   },
   "include": [
-    "./*.ts",
-    "./*.obs"
+    "./**/*.ts",
+    "./**/*.obs"
   ],
   "references": [
     { "path": "../Core" },
