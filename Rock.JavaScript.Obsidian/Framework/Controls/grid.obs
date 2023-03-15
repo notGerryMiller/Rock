@@ -2,11 +2,11 @@
 <template>
     <table class="grid-table table table-bordered table-striped table-hover table-obsidian">
         <thead>
-            <GridFilterHeaderRow v-model:filterValue="quickFilterValue"
+            <FilterHeaderRow v-model:filterValue="quickFilterValue"
                                  :gridActions="gridActions"
                                  :visibleColumnCount="visibleColumnCount" />
 
-            <GridColumnHeaderRow :columns="visibleColumnDefinitions"
+            <ColumnHeaderRow :columns="visibleColumnDefinitions"
                                  v-model:columnFilters="columnFilterValues"
                                  v-model:columnSort="columnSortDirection"
                                  :rows="rows" />
@@ -25,13 +25,13 @@
                 </td>
             </tr>
 
-            <GridDataRows v-else
+            <DataRows v-else
                           :columns="visibleColumnDefinitions"
                           :rows="visibleRows" />
         </tbody>
 
         <tfoot>
-            <GridPagerRow v-model:pageSize="pageSize"
+            <PagerRow v-model:pageSize="pageSize"
                           v-model:currentPage="currentPage"
                           :pageCount="pageCount"
                           :pageSizes="pageSizes"
@@ -180,16 +180,16 @@ table.table-obsidian th.grid-error > .alert {
 </style>
 
 <script setup lang="ts">
+    import Alert from "@Obsidian/Controls/alert.obs";
+    import LoadingIndicator from "@Obsidian/Controls/loadingIndicator";
+    import ColumnHeaderRow from "./Grid/columnHeaderRow.partial.obs";
+    import DataRows from "./Grid/dataRows.partial.obs";
+    import FilterHeaderRow from "./Grid/filterHeaderRow.partial.obs";
+    import PagerRow from "./Grid/pagerRow.partial.obs";
+    import { computed, defineComponent, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
     import { resolveMergeFields } from "@Obsidian/Utility/lava";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
-    import Alert from "@Obsidian/Controls/alert.obs";
-    import LoadingIndicator from "@Obsidian/Controls/loadingIndicator";
-    import { computed, defineComponent, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
-    import GridColumnHeaderRow from "./Grid/gridColumnHeaderRow.partial.obs";
-    import GridDataRows from "./Grid/gridDataRows.partial.obs";
-    import GridFilterHeaderRow from "./Grid/gridFilterHeaderRow.partial.obs";
-    import GridPagerRow from "./Grid/gridPagerRow.partial.obs";
     import { GridAction, GridColumnDefinition, IGridColumnFilter, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";

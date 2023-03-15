@@ -3,14 +3,14 @@
         <td class="grid-paging" :colspan="visibleColumnCount">
             <div class="d-flex">
                 <div class="grid-page-sizes">
-                    <GridPageSizePicker v-model="pageSize" :pageSizes="pageSizes" />
+                    <PageSizePicker v-model="pageSize" :pageSizes="pageSizes" />
 
                     <div v-if="message" class="grid-itemcount">{{ message }}</div>
                 </div>
 
-                <GridPagePicker v-model="currentPage" :pageCount="pageCount" />
+                <PagePicker v-model="currentPage" :pageCount="pageCount" />
 
-                <GridActionGroup :gridActions="gridActions" />
+                <ActionGroup :gridActions="gridActions" />
             </div>
         </td>
     </tr>
@@ -18,10 +18,10 @@
 
 <script setup lang="ts">
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
-    import { computed, PropType } from "vue";
-    import GridActionGroup from "./gridActionGroup.partial.obs";
-    import GridPagePicker from "./gridPagePicker.partial.obs";
-    import GridPageSizePicker from "./gridPageSizePicker.partial.obs";
+    import { PropType } from "vue";
+    import ActionGroup from "./actionGroup.partial.obs";
+    import PagePicker from "./pagePicker.partial.obs";
+    import PageSizePicker from "./pageSizePicker.partial.obs";
     import { GridAction } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
@@ -68,16 +68,4 @@
 
     const pageSize = useVModelPassthrough(props, "pageSize", emit);
     const currentPage = useVModelPassthrough(props, "currentPage", emit);
-
-    const hasMultiplePages = computed((): boolean => {
-        return props.pageCount > 1;
-    });
-
-    const getPageSizeClass = (size: number): string | undefined => {
-        return pageSize.value === size ? "active" : undefined;
-    };
-
-    const onPageSizeClick = (size: number): void => {
-        pageSize.value = size;
-    };
 </script>

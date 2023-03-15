@@ -1,6 +1,6 @@
 <template>
     <tr>
-        <GridColumnHeaderCell v-for="column in columns"
+        <ColumnHeaderCell v-for="column in columns"
                               :column="column"
                               :filterValue="columnFilters[column.name]"
                               :sortDirection="columnSortLookup[column.name]"
@@ -13,7 +13,7 @@
 <script setup lang="ts">
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import { PropType, ref } from "vue";
-    import GridColumnHeaderCell from "./gridColumnHeaderCell.partial.obs";
+    import ColumnHeaderCell from "./columnHeaderCell.partial.obs";
     import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({

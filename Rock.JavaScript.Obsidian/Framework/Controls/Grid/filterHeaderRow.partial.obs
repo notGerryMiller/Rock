@@ -6,7 +6,7 @@
                     <TextBox v-model="filterValue" placeholder="Filter" />
                 </div>
 
-                <GridActionGroup :gridActions="gridActions" />
+                <ActionGroup :gridActions="gridActions" />
             </div>
         </th>
     </tr>
@@ -16,7 +16,7 @@
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import TextBox from "@Obsidian/Controls/textBox";
     import { PropType } from "vue";
-    import GridActionGroup from "./gridActionGroup.partial.obs";
+    import ActionGroup from "./actionGroup.partial.obs";
     import { GridAction } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
