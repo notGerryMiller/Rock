@@ -15,6 +15,8 @@
                           label="Email" />
                 <DatePicker v-model="expirationDate"
                           label="Expiration Date" />
+                <CampusPicker label="Campus" v-model="campus"
+                          :rules="isCampusRequired" />
             </div>
 
             <div class="col-md-3">
@@ -62,6 +64,7 @@
     import PersonPicker from "@Obsidian/Controls/personPicker";
     import CheckBox from "@Obsidian/Controls/checkBox";
     import CheckBoxList from "@Obsidian/Controls/checkBoxList";
+    import CampusPicker from "@Obsidian/Controls/campusPicker.obs";
     import Toggle from "@Obsidian/Controls/toggle";
     import TextBox from "@Obsidian/Controls/textBox";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
@@ -99,6 +102,7 @@
     const lastName = propertyRef(props.modelValue.lastName ?? "", "LastName");
     const email = propertyRef(props.modelValue.email ?? "", "Email");
     const expirationDate = propertyRef(props.modelValue.expirationDate ?? "", "ExpirationDate");
+    const campus = propertyRef(props.modelValue?.campus, "CampusId");
     const category = propertyRef(props.modelValue.category, "Category");
     const request = propertyRef(props.modelValue.text, "Text");
     const answer = propertyRef(props.modelValue.answer, "Answer");
@@ -116,7 +120,7 @@
 
     // The properties that are being edited. This should only contain
     // objects returned by propertyRef().
-    const propRefs = [isActive, requestedByPersonAlias, isApproved, firstName, lastName, email, expirationDate, category, request, answer, isPublic, isUrgent, allowComments];
+    const propRefs = [isActive, requestedByPersonAlias, isApproved, firstName, lastName, email, expirationDate, campus, category, request, answer, isPublic, isUrgent, allowComments];
 
     // #endregion
 
@@ -147,6 +151,7 @@
     });
 
     const isLastNameRequired = computed(() => props.options.isLastNameRequired ? "required": "");
+    const isCampusRequired = computed(() => props.options.isCampusRequired ? "required": "");
 
     // #endregion
 
@@ -169,6 +174,7 @@
         updateRefValue(lastName, props.modelValue.lastName ?? "");
         updateRefValue(email, props.modelValue.email ?? "");
         updateRefValue(expirationDate, props.modelValue.expirationDate ?? "");
+        updateRefValue(campus, props.modelValue?.campus);
         updateRefValue(category, props.modelValue?.category);
         updateRefValue(request, props.modelValue.text ?? "");
         updateRefValue(answer, props.modelValue.answer ?? "");

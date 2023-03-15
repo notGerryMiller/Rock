@@ -15,11 +15,6 @@
 // </copyright>
 //
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-
 using Rock.Attribute;
 using Rock.Constants;
 using Rock.Data;
@@ -27,6 +22,11 @@ using Rock.Model;
 using Rock.Security;
 using Rock.ViewModels.Blocks;
 using Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail;
+using Rock.Web.Cache;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 
 namespace Rock.Blocks.Prayer
 {
@@ -183,6 +183,15 @@ namespace Rock.Blocks.Prayer
                     box.Entity.AllowComments = GetAttributeValue( AttributeKey.DefaultAllowCommentsChecked ).AsBooleanOrNull() ?? true;
                     box.Entity.IsPublic = GetAttributeValue( AttributeKey.DefaultToPublic ).AsBoolean();
 
+                    // if default the requester to the current person based on the block attribute
+                    var CurrentPerson = this.GetCurrentPerson();
+                    if ( CurrentPerson != null && GetAttributeValue( AttributeKey.SetCurrentPersonToRequester ).AsBoolean() )
+                    {
+                        box.Entity.RequestedByPersonAlias = CurrentPerson.PrimaryAlias.ToListItemBag();
+                        box.Entity.FirstName = CurrentPerson.NickName;
+                        box.Entity.LastName = CurrentPerson.LastName;
+                    }
+
                     box.SecurityGrantToken = GetSecurityGrantToken( entity );
                 }
                 else
@@ -204,17 +213,6 @@ namespace Rock.Blocks.Prayer
                 return null;
             }
 
-            // Get the email for the prayer request detail entity 
-            string email = "";
-            if ( !string.IsNullOrWhiteSpace( entity.Email ) )
-            {
-                email = entity.Email;
-            }
-            else if ( entity.RequestedByPersonAlias != null )
-            {
-                email = entity.RequestedByPersonAlias.Person.Email;
-            }
-
             return new PrayerRequestBag
             {
                 IdKey = entity.IdKey,
@@ -230,7 +228,7 @@ namespace Rock.Blocks.Prayer
                 CreatedByPersonAlias = entity.CreatedByPersonAlias.ToListItemBag(),
                 CreatedByPersonAliasId = entity.CreatedByPersonAliasId,
                 CreatedDateTime = entity.CreatedDateTime,
-                Email = email,
+                Email = entity.Email,
                 EnteredDateTime = entity.EnteredDateTime,
                 ExpirationDate = entity.ExpirationDate,
                 FirstName = entity.FirstName,
@@ -292,6 +290,25 @@ namespace Rock.Blocks.Prayer
             var bag = GetCommonEntityBag( entity );
 
             bag.LoadAttributesAndValuesForPublicEdit( entity, RequestContext.CurrentPerson );
+
+            // If there is no email for the prayer request detail entity, set it to the requester's 
+            if ( string.IsNullOrWhiteSpace( entity.Email ) && entity.RequestedByPersonAlias != null )
+            {
+                bag.Email = entity.RequestedByPersonAlias.Person.Email;
+            }
+
+            // get the experiation date from the block attributes if the prayer request has no expiration date set
+            if ( entity.ExpirationDate == null )
+            {
+                var expireDays = Convert.ToDouble( GetAttributeValue( AttributeKey.ExpireDays ) );
+                bag.ExpirationDate = RockDateTime.Now.AddDays( expireDays );
+            }
+
+            // set to the default category in edit mode if no category specified on the prayer request
+            if ( entity.Category == null )
+            {
+                bag.Category = CategoryCache.Get( GetAttributeValue( AttributeKey.DefaultCategory ) ).ToListItemBag();
+            }
 
             return bag;
         }

@@ -150,10 +150,12 @@
             });
         }
 
-        labels.push({
-            title: `${prayerRequestViewBag.value?.category?.text ?? ""}`,
-            type: "default"
-        });
+        if(prayerRequestViewBag.value?.category?.text){
+            labels.push({
+                title: `${prayerRequestViewBag.value?.category?.text}`,
+                type: "default"
+            });
+        }
 
         labels.push({
             title: `${prayerRequestViewBag.value?.isApproved ? "Approved" : "Pending"}`,

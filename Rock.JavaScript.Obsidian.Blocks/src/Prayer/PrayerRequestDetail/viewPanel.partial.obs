@@ -90,6 +90,10 @@
             valueBuilder.addHtmlValue("Email", `<a hRockLabel ref="mailto:${email}">${email}</a>`);
         }
 
+        if(props.modelValue?.campus?.text) {
+            valueBuilder.addTextValue("Campus", props.modelValue?.campus.text);
+        }
+
         valueBuilder.addHtmlValue("Request", props.modelValue?.text ?? "");
 
         valueBuilder.addHtmlValue("Answer", props.modelValue?.answer ?? "");
