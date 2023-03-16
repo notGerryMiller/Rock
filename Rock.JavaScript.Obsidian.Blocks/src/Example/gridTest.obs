@@ -1,13 +1,13 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
     <Grid ref="myGrid" :data="loadGridData" itemId="guid" stickyHeader>
-        <Column name="name" title="Name" sortValue="{{ row.name.lastName }} {{ row.name.firstName }}" :filter="textColumnFilter" quickFilterValue="{{ row.name.firstName }} {{  row.name.lastName }}">
+        <Column name="name" title="Name" sortValue="{{ row.name.lastName }} {{ row.name.firstName }}" :filter="textValueFilter" quickFilterValue="{{ row.name.firstName }} {{  row.name.lastName }}">
             <template #body="{ row }">
                 {{ row.name.firstName }} {{ row.name.lastName }}
             </template>
         </Column>
 
-        <Column name="email" title="Email" field="email" sortField="email" :filter="pickExistingColumnFilter" />
+        <Column name="email" title="Email" field="email" sortField="email" :filter="pickExistingValueFilter" />
 
         <Column name="enteredDateTime" title="Entered On" field="enteredDateTime" sortField="enteredDateTime">
             <template #body="{ row }">
@@ -15,7 +15,7 @@
             </template>
         </Column>
 
-        <NumberColumn name="id" title="Id" field="id" sortField="id" :filter="numberColumnFilter" />
+        <NumberColumn name="id" title="Id" field="id" sortField="id" :filter="numberValueFilter" />
 
         <DateColumn name="expirationDateTime" title="Expires" field="expirationDateTime" sortField="expirationDateTime" />
 
@@ -50,7 +50,7 @@
         <ColoredBadgeColumn name="mode"
                             title="Mode"
                             field="mode"
-                            :filter="pickExistingColumnFilter"
+                            :filter="pickExistingValueFilter"
                             quickFilterValue="{{ row.mode.text }}" />
 
         <BooleanColumn name="isPublic"
@@ -70,7 +70,7 @@
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
     import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
-    import Grid, { AttributeColumns, BooleanColumn, ColoredBadgeColumn, Column, DateColumn, NumberColumn, numberColumnFilter, pickExistingColumnFilter, textColumnFilter } from "@Obsidian/Controls/grid";
+    import Grid, { AttributeColumns, BooleanColumn, ColoredBadgeColumn, Column, DateColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
 
     // Putting this here as an example of how to call methods on components.
     // Such as myGrid.value.reloadItem(item.id);

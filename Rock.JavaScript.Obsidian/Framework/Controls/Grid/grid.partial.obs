@@ -276,7 +276,7 @@ table.table-obsidian th.grid-error > .alert {
             return factory(row, column);
         }
 
-        const cacheKey = `row-item-${rowId}`;
+        const cacheKey = `row-item-${rowId}-${column.name}`;
         let cache = gridData.cache[cacheKey] as RowCacheItem | undefined;
 
         if (!cache) {

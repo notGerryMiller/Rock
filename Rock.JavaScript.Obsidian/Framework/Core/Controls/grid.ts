@@ -91,7 +91,7 @@ export const standardFilterProps: StandardFilterProps = {
 
 // #region Filter Matches Functions
 
-export function textColumnFilterMatches(needle: unknown, haystack: unknown): boolean {
+export function textFilterMatches(needle: unknown, haystack: unknown): boolean {
     if (typeof (needle) !== "string") {
         return false;
     }
@@ -109,7 +109,7 @@ export function textColumnFilterMatches(needle: unknown, haystack: unknown): boo
     return false;
 }
 
-export function pickExistingColumnFilterMatches(needle: unknown, haystack: unknown): boolean {
+export function pickExistingFilterMatches(needle: unknown, haystack: unknown): boolean {
     if (!Array.isArray(needle)) {
         return false;
     }
@@ -121,7 +121,7 @@ export function pickExistingColumnFilterMatches(needle: unknown, haystack: unkno
     return needle.some(n => deepEqual(n, haystack, true));
 }
 
-export function numberColumnFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridData): boolean {
+export function numberFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridData): boolean {
     if (!needle || typeof needle !== "object") {
         return false;
     }

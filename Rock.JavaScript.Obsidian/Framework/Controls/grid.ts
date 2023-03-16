@@ -32,11 +32,11 @@ import DateCell from "./Grid/Cells/dateCell.partial.obs";
 import NumberCell from "./Grid/Cells/numberCell.partial.obs";
 import TextCell from "./Grid/Cells/textCell.partial";
 
-import NumberColumnFilter from "./Grid/Filters/numberColumnFilter.partial.obs";
-import PickExistingColumnFilter from "./Grid/Filters/pickExistingColumnFilter.partial.obs";
-import TextColumnFilter from "./Grid/Filters/textColumnFilter.partial.obs";
+import NumberFilter from "./Grid/Filters/numberFilter.partial.obs";
+import PickExistingFilter from "./Grid/Filters/pickExistingFilter.partial.obs";
+import TextFilter from "./Grid/Filters/textFilter.partial.obs";
 
-import { numberColumnFilterMatches, pickExistingColumnFilterMatches, textColumnFilterMatches } from "@Obsidian/Core/Controls/grid";
+import { numberFilterMatches, pickExistingFilterMatches, textFilterMatches } from "@Obsidian/Core/Controls/grid";
 import { IGridColumnFilter } from "@Obsidian/Types/Controls/grid";
 
 // Export main Grid component.
@@ -65,25 +65,25 @@ export {
 
 // Export filter components.
 export {
-    NumberColumnFilter,
-    PickExistingColumnFilter,
-    TextColumnFilter
+    NumberFilter,
+    PickExistingFilter,
+    TextFilter
 };
 
-export const textColumnFilter: IGridColumnFilter = {
-     component: TextColumnFilter,
+export const textValueFilter: IGridColumnFilter = {
+     component: TextFilter,
 
-     matches: textColumnFilterMatches
- };
-
-export const pickExistingColumnFilter: IGridColumnFilter = {
-    component: PickExistingColumnFilter,
-
-    matches: pickExistingColumnFilterMatches
+     matches: textFilterMatches
 };
 
-export const numberColumnFilter: IGridColumnFilter = {
-    component: NumberColumnFilter,
+export const pickExistingValueFilter: IGridColumnFilter = {
+    component: PickExistingFilter,
 
-    matches: numberColumnFilterMatches
+    matches: pickExistingFilterMatches
+};
+
+export const numberValueFilter: IGridColumnFilter = {
+    component: NumberFilter,
+
+    matches: numberFilterMatches
 };
