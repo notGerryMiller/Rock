@@ -44,7 +44,7 @@ describe("Toggle", () => {
         assert.deepStrictEqual(onButton.classes(), ["active", "btn", "btn-primary", "btn-success"]);
     });
 
-    it("should show css on ON BUTTON active if offButtonActiveCssClass prop provided", () => {
+    it("should show css on OFF BUTTON active if offButtonActiveCssClass prop provided", () => {
         const wrapper = mount(Toggle, {
             props: {
                 modelValue: false,

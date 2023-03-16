@@ -228,6 +228,26 @@ export default defineComponent({
         onDelete: {
             type: Function as PropType<() => false | string | PromiseLike<false | string>>,
             required: false
+        },
+
+        /**
+         * If true then the back button will be visible in view mode and it will
+         * navigate to the parent page when the button is clicked
+         */
+        isBackVisible: {
+            type: Boolean as PropType<boolean>,
+            required: false,
+            default: false
+        },
+
+        /**
+         * A function to be called when the individual clicks the Back button
+         * while in View mode.
+         */
+        onBack: {
+            type: Function as PropType<() => boolean | string | PromiseLike<boolean | string>>,
+            required: false,
+            default: false
         }
     },
 
@@ -522,6 +542,24 @@ export default defineComponent({
         };
 
         /**
+         * Called when the back button has been clicked.
+         */
+        const onBackClick = async (): Promise<void> => {
+            console.log("clicked");
+            if (props.onBack) {
+                let result = props.onBack();
+                if (isPromise(result)) {
+                    result = await result;
+                }
+                if (typeof result === "string") {
+                    window.location.href = makeUrlRedirectSafe(result);
+                }
+            }
+            return;
+        };
+        
+
+        /**
          * Called when the edit button has been clicked. Check with the block
          * if we should switch to edit mode or stay in view mode.
          */
@@ -751,6 +789,7 @@ export default defineComponent({
             onDeleteClick,
             onEditCancelClick,
             onEditClick,
+            onBackClick,
             onEditSuspenseReady,
             onSaveClick,
             onSaveSubmit,
@@ -806,6 +845,7 @@ export default defineComponent({
 
         <template v-else>
             <RockButton v-if="isEditVisible" btnType="primary" @click="onEditClick" autoDisable>Edit</RockButton>
+            <RockButton v-if="isBackVisible" btnType="link" @click="onBackClick" autoDisable>Back</RockButton>
             <RockButton v-if="isDeleteVisible" btnType="link" @click="onDeleteClick" autoDisable>Delete</RockButton>
         </template>
 

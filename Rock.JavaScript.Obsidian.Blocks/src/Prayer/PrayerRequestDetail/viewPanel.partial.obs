@@ -93,7 +93,9 @@
 
         valueBuilder.addHtmlValue("Request", props.modelValue?.text ?? "");
 
-        valueBuilder.addHtmlValue("Answer", props.modelValue?.answer ?? "");
+        if(props.modelValue?.answer) {
+            valueBuilder.addHtmlValue("Answer", props.modelValue?.answer);
+        }
 
 
         return valueBuilder.build();
