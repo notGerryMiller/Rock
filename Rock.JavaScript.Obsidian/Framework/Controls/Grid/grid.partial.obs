@@ -1,6 +1,6 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <table class="grid-table table table-bordered table-striped table-hover table-obsidian">
+    <table class="grid-table table table-bordered table-striped table-hover table-obsidian" :class="{ 'table-sticky': props.stickyHeader }">
         <thead>
             <FilterHeaderRow v-model:filterValue="quickFilterValue"
                                  :gridActions="gridActions"
@@ -43,6 +43,11 @@
 </template>
 
 <style>
+table.table-obsidian.table-sticky > thead {
+    position: sticky;
+    top: var(--top-header-height);
+}
+
 table.table-obsidian th.grid-column-header {
     position: relative;
 }
@@ -89,7 +94,8 @@ table.table-obsidian th.grid-column-header .grid-filter-popup .grid-filter-popup
 }
 
 table.table-obsidian th.grid-column-header .grid-filter-popup .grid-filter-popup-body {
-    margin: 12px;
+    margin: 10px;
+    padding: 2px;
     overflow-x: clip;
 }
 
@@ -182,15 +188,15 @@ table.table-obsidian th.grid-error > .alert {
 <script setup lang="ts">
     import Alert from "@Obsidian/Controls/alert.obs";
     import LoadingIndicator from "@Obsidian/Controls/loadingIndicator";
-    import ColumnHeaderRow from "./Grid/columnHeaderRow.partial.obs";
-    import DataRows from "./Grid/dataRows.partial.obs";
-    import FilterHeaderRow from "./Grid/filterHeaderRow.partial.obs";
-    import PagerRow from "./Grid/pagerRow.partial.obs";
+    import ColumnHeaderRow from "./columnHeaderRow.partial.obs";
+    import DataRows from "./dataRows.partial.obs";
+    import FilterHeaderRow from "./filterHeaderRow.partial.obs";
+    import PagerRow from "./pagerRow.partial.obs";
     import { computed, defineComponent, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
     import { resolveMergeFields } from "@Obsidian/Utility/lava";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
-    import { GridAction, GridColumnDefinition, IGridColumnFilter, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
+    import { GridAction, GridColumnDefinition, IGridColumnFilter, IGridData, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
 
@@ -286,7 +292,8 @@ table.table-obsidian th.grid-error > .alert {
             return factory(row, column);
         }
 
-        let cache = rowItemCache[rowId];
+        const cacheKey = `row-item-${rowId}`;
+        let cache = gridData.cache[cacheKey] as RowCacheItem | undefined;
 
         if (!cache) {
             cache = {
@@ -295,14 +302,10 @@ table.table-obsidian th.grid-error > .alert {
                 uniqueValue: null,
                 filterValue: null
             };
-            rowItemCache[rowId] = cache;
+            gridData.cache[cacheKey] = cache;
         }
 
         if (cache.quickFilterValue === null) {
-            if (window["daniel"]) {
-                console.log(rowItemCache);
-                console.log(`Cache Miss on ${rowId}`);
-            }
             cache.quickFilterValue = factory(row, column);
         }
 
@@ -466,6 +469,12 @@ table.table-obsidian th.grid-error > .alert {
         itemId: {
             type: String as PropType<string>,
             required: false
+        },
+
+        /** If enabled then the grid will have a sticky header. */
+        stickyHeader: {
+            type: Boolean as PropType<boolean>,
+            default: false
         }
     });
 
@@ -477,7 +486,11 @@ table.table-obsidian th.grid-error > .alert {
 
     const slots = useSlots();
 
-    let rowItemCache: Record<string | number, RowCacheItem> = {};
+    const gridData: IGridData = {
+        cache: {},
+
+        rows: []
+    };
 
     const gridActions = ref<GridAction[]>([]);
     const currentPage = ref(1);
@@ -504,7 +517,7 @@ table.table-obsidian th.grid-error > .alert {
         return visibleColumnDefinitions.value.length;
     });
 
-    const updateFilteredRows = (): void => {
+    function updateFilteredRows(): void {
         const start = Date.now();
         if (columns.value.length > 0) {
             const columns = toRaw(visibleColumnDefinitions.value);
@@ -538,7 +551,7 @@ table.table-obsidian th.grid-error > .alert {
                         return false;
                     }
 
-                    return column.filter.matches(columnFilterValue, value, column);
+                    return column.filter.matches(columnFilterValue, value, column, gridData);
                 });
 
                 return quickFilterMatch && filtersMatch;
@@ -554,9 +567,9 @@ table.table-obsidian th.grid-error > .alert {
         updateSortedRows();
         updatePageCount();
         updatePagerMessage();
-    };
+    }
 
-    const updateSortedRows = (): void => {
+    function updateSortedRows(): void {
         const sortDirection = columnSortDirection.value;
 
         if (!sortDirection) {
@@ -617,35 +630,36 @@ table.table-obsidian th.grid-error > .alert {
 
         console.log(`sortedRows took ${Date.now() - start}ms.`);
         updateVisibleRows();
-    };
+    }
 
-    const updateVisibleRows = (): void => {
+    function updateVisibleRows(): void {
         const startIndex = (currentPage.value - 1) * pageSize.value;
 
         visibleRows.value = sortedRows.slice(startIndex, startIndex + pageSize.value);
-    };
+    }
 
-    const updatePageCount = (): void => {
+    function updatePageCount(): void {
         pageCount.value = Math.ceil(filteredRows.length / pageSize.value);
-    };
+    }
 
-    const updatePagerMessage = (): void => {
+    function updatePagerMessage(): void {
         pagerMessage.value = `${asFormattedString(filteredRows.length)} ${pluralConditional(filteredRows.length, "Group", "Groups")}`;
-    };
+    }
 
-    const updateGridData = async (): Promise<void> => {
+    async function updateGridData(): Promise<void> {
         loadingData.value = true;
 
         if (typeof props.data === "object") {
             const data = props.data;
             rows.value = data.rows ?? [];
-            rowItemCache = {};
         }
         else if (typeof props.data === "function") {
             try {
                 const data = await props.data();
                 rows.value = data.rows ?? [];
-                rowItemCache = {};
+
+                gridData.rows = data.rows ?? [];
+                gridData.cache = {};
             }
             catch (error) {
                 gridErrorMessage.value = error instanceof Error ? error.message : new String(error).toString();
@@ -656,11 +670,11 @@ table.table-obsidian th.grid-error > .alert {
         updateFilteredRows();
 
         loadingData.value = false;
-    };
+    }
 
-    const onActionClick = (): Promise<void> => {
+    function onActionClick(): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, 2000));
-    };
+    }
 
     watch([quickFilterValue, columnFilterValues], () => {
         currentPage.value = 1;

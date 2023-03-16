@@ -1,6 +1,6 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <Grid ref="myGrid" :data="loadGridData" itemId="guid">
+    <Grid ref="myGrid" :data="loadGridData" itemId="guid" stickyHeader>
         <Column name="name" title="Name" sortValue="{{ row.name.lastName }} {{ row.name.firstName }}" :filter="textColumnFilter" quickFilterValue="{{ row.name.firstName }} {{  row.name.lastName }}">
             <template #body="{ row }">
                 {{ row.name.firstName }} {{ row.name.lastName }}
@@ -15,6 +15,8 @@
             </template>
         </Column>
 
+        <NumberColumn name="id" title="Id" field="id" sortField="id" :filter="numberColumnFilter" />
+
         <DateColumn name="expirationDateTime" title="Expires" field="expirationDateTime" sortField="expirationDateTime" />
 
         <BooleanColumn name="isUrgent" title="Urgent" field="isUrgent" sortField="isUrgent" />
@@ -25,7 +27,7 @@
                           field="isUrgent"
                           sortField="isUrgent"
                           :classSource="badgeClassLookup" />
-                    -->
+    -->
 
     <!--
         <Column name="isUrgent"
@@ -43,7 +45,7 @@
                 </span>
             </template>
         </Column>
-                    -->
+    -->
 
         <ColoredBadgeColumn name="mode"
                             title="Mode"
@@ -64,16 +66,16 @@
     // #region Imports
     import TextBox from "@Obsidian/Controls/textBox";
     import { useConfigurationValues, useInvokeBlockAction } from "@Obsidian/Utility/block";
-    import { Component, computed, defineComponent, PropType, reactive, ref, VNode, watch } from "vue";
+    import { Component, computed, defineComponent, PropType, ref, VNode, watch } from "vue";
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
     import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
-    import Grid from "@Obsidian/Controls/grid.obs";
-    import { FilterComponentProps, GridColumnDefinition, IGridColumnFilter } from "@Obsidian/Types/Controls/grid";
+    import Grid, { NumberColumnFilter, PickExistingColumnFilter } from "@Obsidian/Controls/grid";
+    import { FilterComponentProps, GridColumnDefinition, IGridColumnFilter, IGridData } from "@Obsidian/Types/Controls/grid";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
-    import PickExistingColumnFilterComponent from "@Obsidian/Controls/pickExistingColumnFilterComponent.obs";
     import { deepEqual } from "@Obsidian/Utility/util";
+    import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
 
     // Putting this here as an example of how to call methods on components.
     // Such as myGrid.value.reloadItem(item.id);
@@ -222,6 +224,54 @@
                 type: Object as PropType<VNode>,
                 required: false,
                 default: booleanColumnValueComponent
+            }
+        }
+    });
+
+    const numberColumnValueComponent = defineComponent({
+        props: {
+            column: {
+                type: Object as PropType<GridColumnDefinition>,
+                required: true
+            },
+            row: {
+                type: Object as PropType<Record<string, unknown>>,
+                required: true
+            }
+        },
+
+        setup(props) {
+            const formattedValue = computed((): string => {
+                if (!props.column.field) {
+                    return "";
+                }
+
+                const value = props.row[props.column.field];
+
+                if (typeof value !== "number") {
+                    return "";
+                }
+
+                return value.toLocaleString();
+            });
+
+            return {
+                formattedValue
+            };
+        },
+
+        template: `{{ formattedValue }}`
+    });
+
+    // eslint-disable-next-line @typescript-eslint/naming-convention,@typescript-eslint/no-unused-vars
+    const NumberColumn = defineComponent({
+        props: {
+            ...standardColumnProps,
+
+            format: {
+                type: Object as PropType<VNode>,
+                required: false,
+                default: numberColumnValueComponent
             }
         }
     });
@@ -408,11 +458,10 @@
 
             format: {
                 type: Object as PropType<VNode>,
-                required: false,
                 default: coloredBadgeColumnValueComponent
             }
-    }
-});
+        }
+    });
 
     function textColumnFilterValue(needle: unknown, haystack: unknown): boolean {
         if (typeof (needle) !== "string") {
@@ -495,9 +544,138 @@
     }
 
     const pickExistingColumnFilter: IGridColumnFilter = {
-        component: PickExistingColumnFilterComponent,
+        component: PickExistingColumnFilter,
 
         matches: pickExistingColumnFilterValue
+    };
+
+    function calculateColumnAverage(rows: Record<string, unknown>[], column: GridColumnDefinition): number {
+        let count = 0;
+        let total = 0;
+        for (const row of rows) {
+            const rowValue = column.filterValue(row, column);
+
+            if (typeof rowValue === "number") {
+                total += rowValue;
+                count++;
+            }
+        }
+
+        return count === 0 ? 0 : total / count;
+    }
+
+    function calculateColumnTopNRowValue(rows: Record<string, unknown>[], rowCount: number, column: GridColumnDefinition): number {
+        const values: number[] = [];
+
+        for (const row of rows) {
+            const rowValue = column.filterValue(row, column);
+
+            if (typeof rowValue === "number") {
+                values.push(rowValue);
+            }
+        }
+
+        // Sort in descending order.
+        values.sort((a, b) => b - a);
+
+        if (rowCount <= values.length) {
+            return values[rowCount - 1];
+        }
+        else {
+            return values[values.length - 1];
+        }
+    }
+
+    function numberColumnFilterValue(needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridData): boolean {
+        if (!needle || typeof needle !== "object") {
+            return false;
+        }
+
+        // Allow undefined values and number values, but everything else is
+        // considered a non-match.
+        if (haystack !== undefined && typeof haystack !== "number") {
+            return false;
+        }
+
+        if (needle["method"] === NumberFilterMethod.Equals) {
+            return haystack === needle["value"];
+        }
+        else if (needle["method"] === NumberFilterMethod.DoesNotEqual) {
+            return haystack !== needle["value"];
+        }
+
+        // All the remaining comparison types require a value.
+        if (haystack === undefined) {
+            return false;
+        }
+
+        if (needle["method"] === NumberFilterMethod.GreaterThan) {
+            return haystack > needle["value"];
+        }
+        else if (needle["method"] === NumberFilterMethod.GreaterThanOrEqual) {
+            return haystack >= needle["value"];
+        }
+        else if (needle["method"] === NumberFilterMethod.LessThan) {
+            return haystack < needle["value"];
+        }
+        else if (needle["method"] === NumberFilterMethod.LessThanOrEqual) {
+            return haystack <= needle["value"];
+        }
+        else if (needle["method"] === NumberFilterMethod.Between) {
+            if (typeof needle["value"] !== "number" || typeof needle["secondValue"] !== "number") {
+                return false;
+            }
+
+            return haystack >= needle["value"] && haystack <= needle["secondValue"];
+        }
+        else if (needle["method"] === NumberFilterMethod.TopN) {
+            const nCount = needle["value"];
+
+            if (typeof nCount !== "number" || nCount <= 0) {
+                return false;
+            }
+
+            const cacheKey = `number-filter-${column.name}.top-${nCount}`;
+            let topn = gridData.cache[cacheKey] as number | undefined;
+
+            if (topn === undefined) {
+                topn = calculateColumnTopNRowValue(gridData.rows, nCount, column);
+                gridData.cache[cacheKey] = topn;
+            }
+
+            return haystack >= topn;
+        }
+        else if (needle["method"] === NumberFilterMethod.AboveAverage) {
+            const cacheKey = `number-filter-${column.name}.average`;
+            let average = gridData.cache[cacheKey] as number | undefined;
+
+            if (average === undefined) {
+                average = calculateColumnAverage(gridData.rows, column);
+                gridData.cache[cacheKey] = average;
+            }
+
+            return haystack > average;
+        }
+        else if (needle["method"] === NumberFilterMethod.BelowAverage) {
+            const cacheKey = `number-filter-${column.name}.average`;
+            let average = gridData.cache[cacheKey] as number | undefined;
+
+            if (average === undefined) {
+                average = calculateColumnAverage(gridData.rows, column);
+                gridData.cache[cacheKey] = average;
+            }
+
+            return haystack < average;
+        }
+        else {
+            return false;
+        }
+    }
+
+    const numberColumnFilter: IGridColumnFilter = {
+        component: NumberColumnFilter,
+
+        matches: numberColumnFilterValue
     };
 
     // eslint-disable-next-line @typescript-eslint/naming-convention,@typescript-eslint/no-unused-vars

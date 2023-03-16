@@ -17,6 +17,12 @@
 
 import { Component, PropType, VNode } from "vue";
 
+export interface IGridData {
+    cache: Record<string, unknown>;
+
+    rows: Record<string, unknown>[];
+}
+
 /** A function that will be called in response to an action. */
 export type GridActionCallback = (event: Event) => void | Promise<void>;
 
@@ -90,7 +96,7 @@ export type ValueFormatterFunction = (row: Record<string, unknown>, column: Grid
 export interface IGridColumnFilter {
     component: Component;
 
-    matches: (needle: unknown, haystack: unknown, column: GridColumnDefinition) => boolean;
+    matches: (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridData) => boolean;
 }
 
 export type FilterComponentProps = {

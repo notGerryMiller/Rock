@@ -116,6 +116,7 @@ namespace Rock.Blocks.Example
                 .AddDateTimeField( "expirationDateTime", pr => pr.ExpirationDate )
                 .AddField( "isUrgent", pr => pr.IsUrgent )
                 .AddField( "isPublic", pr => pr.IsPublic )
+                .AddField( "id", pr => pr.Id )
                 .AddField( "mode", pr => new ListItemBag
                 {
                     Value = pr.IsUrgent == true ? "#900000" : "#009000",
