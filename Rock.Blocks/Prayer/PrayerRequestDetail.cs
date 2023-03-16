@@ -620,6 +620,7 @@ namespace Rock.Blocks.Prayer
                 {
                     return ActionBadRequest( errorMessage );
                 }
+                DeleteAllRelatedNotes( entity, rockContext );
 
                 entityService.Delete( entity );
                 rockContext.SaveChanges();
@@ -680,6 +681,20 @@ namespace Rock.Blocks.Prayer
 
                 return ActionOk( refreshedBox );
             }
+        }
+
+        /// <summary>
+        /// Deletes all related notes for a prayer request.
+        /// </summary>
+        /// <param name="prayerRequest">The prayer request.</param>
+        /// <param name="rockContext">The Rock Context.</param>
+        private void DeleteAllRelatedNotes( PrayerRequest prayerRequest, RockContext rockContext )
+        {
+            var prayerCommentNoteTypeId = NoteTypeCache.Get( Rock.SystemGuid.NoteType.PRAYER_COMMENT.AsGuid() ).Id;
+            var noteService = new NoteService( rockContext );
+            var prayerRequestComments = noteService.Queryable()
+                .Where( n => n.NoteTypeId == prayerCommentNoteTypeId && n.EntityId == prayerRequest.Id );
+            rockContext.BulkDelete( prayerRequestComments );
         }
 
         #endregion
