@@ -657,7 +657,6 @@
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Crm\BadgeDetail\badgeDetailOptionsBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Crm\PersonDetail\Badges\badgesConfigurationBox.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Crm\PhotoOptOut\photoOptOutBag.d.ts" />
-    <TypeScriptCompile Include="Framework\ViewModels\Blocks\Crm\PhotoOptOut\photoOptOutDetailOptionsBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\detailBlockBox.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Engagement\SignUp\SignUpAttendanceDetail\signUpAttendanceBag.d.ts" />
     <TypeScriptCompile Include="Framework\ViewModels\Blocks\Engagement\SignUp\SignUpAttendanceDetail\signUpAttendanceDetailInitializationBox.d.ts" />

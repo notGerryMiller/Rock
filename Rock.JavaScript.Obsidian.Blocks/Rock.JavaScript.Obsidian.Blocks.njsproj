@@ -39,7 +39,7 @@
     <Content Include="src\Core\categoryDetailCustomSettings.vue" />
     <Content Include="src\Core\CategoryDetail\editPanel.partial.vue" />
     <Content Include="src\Core\CategoryDetail\viewPanel.partial.vue" />
-    <Content Include="src\Crm\photoOptOutDetail.obs" />
+    <Content Include="src\Crm\photoOptOut.obs" />
     <Content Include="src\Crm\documentTypeDetail.vue" />
     <Content Include="src\Crm\DocumentTypeDetail\editPanel.partial.vue" />
     <Content Include="src\Crm\DocumentTypeDetail\viewPanel.partial.vue" />

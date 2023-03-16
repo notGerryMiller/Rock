@@ -4,7 +4,7 @@
 
     <Alert v-if="errorMessage" alertType="danger">{{ errorMessage }}</Alert>
 
-    <div v-if="config.entity?.isOptOutSuccessful" class="alert alert-success">
+    <div v-if="config.isOptOutSuccessful" class="alert alert-success">
         You've been opted out and should no longer receive photo requests from us.
     </div>
 </template>
@@ -13,11 +13,9 @@
     import { ref } from "vue";
     import Alert from "@Obsidian/Controls/alert.obs";
     import { useConfigurationValues } from "@Obsidian/Utility/block";
-    import { DetailBlockBox } from "@Obsidian/ViewModels/Blocks/detailBlockBox";
     import { PhotoOptOutBag } from "@Obsidian/ViewModels/Blocks/Crm/PhotoOptOut/PhotoOptOutBag";
-    import { PhotoOptOutDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Crm/PhotoOptOut/PhotoOptOutDetailOptionsBag";
 
-    const config = useConfigurationValues<DetailBlockBox<PhotoOptOutBag, PhotoOptOutDetailOptionsBag>>();
+    const config = useConfigurationValues<PhotoOptOutBag>();
 
     // #region Values
 
@@ -42,7 +40,7 @@
     if (config.errorMessage) {
         blockError.value = config.errorMessage;
     }
-    else if (!config.entity) {
+    else if (!config) {
         blockError.value = "That's odd. We could not find your record in our system. Please contact our office at the number below.";
     }
 </script>

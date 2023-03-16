@@ -21,17 +21,12 @@
 // </copyright>
 //
 
-import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
-
 export type PhotoOptOutBag = {
-    /** Gets or sets the attributes. */
-    attributes?: Record<string, PublicAttributeBag> | null;
-
-    /** Gets or sets the attribute values. */
-    attributeValues?: Record<string, string> | null;
-
-    /** Gets or sets the identifier key of this entity. */
-    idKey?: string | null;
+    /**
+     * Gets or sets the error message. A non-empty value indicates that
+     * an error is preventing the block from being displayed.
+     */
+    errorMessage?: string | null;
 
     /** Gets or sets the TagId of the Rock.Model.Tag that this TaggedItem is tagged with. */
     isOptOutSuccessful: boolean;

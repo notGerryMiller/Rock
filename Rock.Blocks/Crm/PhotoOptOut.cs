@@ -16,7 +16,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
@@ -31,7 +30,7 @@ namespace Rock.Blocks.Crm
     /// <summary>
     /// Allows a person to opt-out of future photo requests.
     /// </summary>
-    /// <seealso cref="Rock.Blocks.RockObsidianDetailBlockType" />
+    /// <seealso cref="Rock.Blocks.RockObsidianBlockType" />
 
     [DisplayName( "Photo Opt-Out" )]
     [Category( "CRM > PhotoRequest" )]
@@ -44,18 +43,13 @@ namespace Rock.Blocks.Crm
 
     [Rock.SystemGuid.EntityTypeGuid( "63f1d46a-eb78-4b0f-b398-099a83e058e8" )]
     [Rock.SystemGuid.BlockTypeGuid( "7e2dfb55-f1ab-4452-a5df-6ce65fbfddad" )]
-    public class PhotoOptOutDetail : RockObsidianDetailBlockType
+    public class PhotoOptOut : RockObsidianBlockType
     {
         #region Keys
 
         private static class PageParameterKey
         {
             public const string Person = "Person";
-        }
-
-        private static class NavigationUrlKey
-        {
-            public const string ParentPage = "ParentPage";
         }
 
         #endregion Keys
@@ -69,13 +63,7 @@ namespace Rock.Blocks.Crm
         {
             using ( var rockContext = new RockContext() )
             {
-                var box = new DetailBlockBox<PhotoOptOutBag, PhotoOptOutDetailOptionsBag>();
-
-                SetBoxInitialEntityState( box, rockContext );
-
-                box.NavigationUrls = GetBoxNavigationUrls();
-
-                return box;
+                return GetPhotoOptOutBag(rockContext );
             }
         }
 
@@ -83,11 +71,12 @@ namespace Rock.Blocks.Crm
         /// Sets the initial entity state of the box. Populates the Entity or
         /// ErrorMessage properties depending on the entity and permissions.
         /// </summary>
-        /// <param name="box">The box to be populated.</param>
+        /// <param name="entityBag">The entityBag to be populated.</param>
         /// <param name="rockContext">The rock context.</param>
-        private void SetBoxInitialEntityState( DetailBlockBox<PhotoOptOutBag, PhotoOptOutDetailOptionsBag> box, RockContext rockContext )
+        private PhotoOptOutBag GetPhotoOptOutBag( RockContext rockContext )
         {
             Person entity = null;
+            var entityBag = new PhotoOptOutBag();
             string personKey = PageParameter( PageParameterKey.Person );
 
             try
@@ -98,24 +87,18 @@ namespace Rock.Blocks.Crm
                     entity = new PersonService( rockContext ).GetByUrlEncodedKey( personKey );
                 }
             }
-            catch ( System.FormatException )
-            {
-                box.ErrorMessage = "No, that's not right. Are you sure you copied that web address correctly?";
-                return;
-            }
             catch ( Exception ex )
             {
-                box.ErrorMessage = "No, that's not right. Are you sure you copied that web address correctly?";
-                return;
+                entityBag.ErrorMessage = "No, that's not right. Are you sure you copied that web address correctly?";
+                return entityBag;
             }
 
             if ( entity == null )
             {
-                box.ErrorMessage = "That's odd. We could not find your record in our system. Please contact our office at the number below.";
-                return;
+                entityBag.ErrorMessage = "That's odd. We could not find your record in our system. Please contact our office at the number below.";
+                return entityBag;
             }
-
-            if ( entity != null )
+            else
             {
                 try
                 {
@@ -134,30 +117,15 @@ namespace Rock.Blocks.Crm
                     groupMember.GroupMemberStatus = GroupMemberStatus.Inactive;
 
                     rockContext.SaveChanges();
-                    box.Entity = new PhotoOptOutBag();
-                    box.Entity.IsOptOutSuccessful = true;
+                    entityBag.IsOptOutSuccessful = true;
                 }
                 catch ( Exception ex )
                 {
-                    box.ErrorMessage = "Something went wrong and we could not save your request. If it happens again please contact our office at the number below.";
+                    entityBag.ErrorMessage = "Something went wrong and we could not save your request. If it happens again please contact our office at the number below.";
                 }
-            }
-            else
-            {
-                box.ErrorMessage = "That's odd. We could not find your record in our system. Please contact our office at the number below.";
-            }
-        }
 
-        /// <summary>
-        /// Gets the box navigation URLs required for the page to operate.
-        /// </summary>
-        /// <returns>A dictionary of key names and URL values.</returns>
-        private Dictionary<string, string> GetBoxNavigationUrls()
-        {
-            return new Dictionary<string, string>
-            {
-                [NavigationUrlKey.ParentPage] = this.GetParentPageUrl()
-            };
+                return entityBag;
+            }
         }
 
         #endregion

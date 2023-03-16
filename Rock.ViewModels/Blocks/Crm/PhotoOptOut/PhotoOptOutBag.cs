@@ -15,15 +15,20 @@
 // </copyright>
 //
 
-using Rock.ViewModels.Utility;
-
 namespace Rock.ViewModels.Blocks.Crm.PhotoOptOut
 {
-    public class PhotoOptOutBag : EntityBagBase
+    public class PhotoOptOutBag
     {
         /// <summary>
         /// Gets or sets the TagId of the Rock.Model.Tag that this TaggedItem is tagged with.
         /// </summary>
         public bool IsOptOutSuccessful { get; set; }
+
+        /// <summary>
+        /// Gets or sets the error message. A non-empty value indicates that
+        /// an error is preventing the block from being displayed.
+        /// </summary>
+        /// <value>The error message.</value>
+        public string ErrorMessage { get; set; }
     }
 }
