@@ -31,6 +31,8 @@
                 <Toggle v-model="isApproved"
                           trueText="Approved"
                           falseText="Pending"
+                          onButtonActiveCssClass="btn-success"
+                          offButtonActiveCssClass="btn-warning"
                           label="Status" />
             </div>
         </div>
