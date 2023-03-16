@@ -1,0 +1,21 @@
+<template>
+    {{ formattedValue }}
+</template>
+
+<script setup lang="ts">
+    import { standardCellProps } from "@Obsidian/Core/Controls/grid";
+    import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
+    import { computed } from "vue";
+
+
+    const props = defineProps(standardCellProps);
+
+    const formattedValue = computed(() => {
+        if (props.column.field) {
+            return RockDateTime.parseISO(props.row[props.column.field] as string)?.toASPString("d") ?? "";
+        }
+        else {
+            return "";
+        }
+    });
+</script>

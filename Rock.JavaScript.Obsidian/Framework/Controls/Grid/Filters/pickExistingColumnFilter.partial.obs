@@ -15,28 +15,13 @@
 <script setup lang="ts">
     import TextBox from "@Obsidian/Controls/textBox";
     import { deepEqual } from "@Obsidian/Utility/util";
-    import { ref, PropType, watch, computed } from "vue";
-    import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ref, watch, computed } from "vue";
+    import { standardFilterProps } from "@Obsidian/Core/Controls/grid";
 
-    const props = defineProps({
-        modelValue: {
-            type: Object as PropType<unknown>,
-            required: false
-        },
-
-        column: {
-            type: Object as PropType<GridColumnDefinition>,
-            required: true
-        },
-
-        rows: {
-            type: Array as PropType<Record<string, unknown>[]>,
-            required: true
-        }
-    });
+    const props = defineProps(standardFilterProps);
 
     const emit = defineEmits<{
-        (event: "update:modelValue", value: unknown): void
+        (e: "update:modelValue", value: unknown): void
     }>();
 
     type DistinctValue = {

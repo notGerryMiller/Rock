@@ -1,0 +1,24 @@
+<template>
+    {{ formattedValue }}
+</template>
+
+<script setup lang="ts">
+    import { standardCellProps } from "@Obsidian/Core/Controls/grid";
+    import { computed } from "vue";
+
+    const props = defineProps(standardCellProps);
+
+    const formattedValue = computed((): string => {
+        if (!props.column.field) {
+            return "";
+        }
+
+        const value = props.row[props.column.field];
+
+        if (typeof value !== "number") {
+            return "";
+        }
+
+        return value.toLocaleString();
+    });
+</script>

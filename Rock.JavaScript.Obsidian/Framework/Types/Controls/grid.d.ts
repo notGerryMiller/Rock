@@ -26,6 +26,41 @@ export interface IGridData {
 /** A function that will be called in response to an action. */
 export type GridActionCallback = (event: Event) => void | Promise<void>;
 
+/**
+ * A function that will be called in order to determine if a row matches the
+ * filtering request for the column.
+ */
+export type GridColumnFilterMatchesCallback = (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridData) => boolean;
+
+export type StandardCellProps = {
+    column: {
+        type: PropType<GridColumnDefinition>,
+        required: true
+    },
+
+    row: {
+        type: PropType<Record<string, unknown>>,
+        required: true
+    }
+};
+
+export type StandardFilterProps = {
+    modelValue: {
+        type: PropType<unknown>,
+        required: false
+    },
+
+    column: {
+        type: PropType<GridColumnDefinition>,
+        required: true
+    },
+
+    rows: {
+        type: PropType<Record<string, unknown>[]>,
+        required: true
+    }
+};
+
 /** Defines a single action related to a Grid control. */
 export type GridAction = {
     /**
@@ -96,7 +131,7 @@ export type ValueFormatterFunction = (row: Record<string, unknown>, column: Grid
 export interface IGridColumnFilter {
     component: Component;
 
-    matches: (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridData) => boolean;
+    matches: GridColumnFilterMatchesCallback;
 }
 
 export type FilterComponentProps = {

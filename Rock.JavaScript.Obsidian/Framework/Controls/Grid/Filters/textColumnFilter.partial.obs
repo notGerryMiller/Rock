@@ -1,0 +1,24 @@
+<template>
+    <TextBox v-model="internalValue" />
+</template>
+
+<script setup lang="ts">
+    import { standardFilterProps } from "@Obsidian/Core/Controls/grid";
+    import { ref, watch } from "vue";
+
+    const props = defineProps(standardFilterProps);
+
+    const emit = defineEmits<{
+        (e: "update:modelValue", value: unknown): void
+    }>();
+
+    const internalValue = ref(typeof (props.modelValue) === "string" ? props.modelValue : "");
+
+    watch(() => props.modelValue, () => {
+        internalValue.value = typeof (props.modelValue) === "string" ? props.modelValue : "";
+    });
+
+    watch(internalValue, () => {
+        emit("update:modelValue", internalValue.value);
+    });
+</script>

@@ -192,6 +192,7 @@ table.table-obsidian th.grid-error > .alert {
     import DataRows from "./dataRows.partial.obs";
     import FilterHeaderRow from "./filterHeaderRow.partial.obs";
     import PagerRow from "./pagerRow.partial.obs";
+    import TextCell from "./Cells/textCell.partial";
     import { computed, defineComponent, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
     import { resolveMergeFields } from "@Obsidian/Utility/lava";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
@@ -260,23 +261,6 @@ table.table-obsidian th.grid-error > .alert {
         return props;
     }
 
-    const textColumnValueComponent = defineComponent({
-        props: {
-            column: {
-                type: Object as PropType<GridColumnDefinition>,
-                required: true
-            },
-            row: {
-                type: Object as PropType<Record<string, unknown>>,
-                required: true
-            }
-        },
-
-        setup(props) {
-            return () => props.column.field ? props.row[props.column.field] : "";
-        }
-    });
-
     function resolveDynamicText(text: string, mergeFields: Record<string, unknown>): string {
         return resolveMergeFields(text, mergeFields);
     }
@@ -341,7 +325,7 @@ table.table-obsidian th.grid-error > .alert {
                         sortValue: (r, c) => c.field ? String(r[c.field]) : undefined,
                         quickFilterValue: (r, c) => getOrUpdateQuickFilterValueCache(r, c, () => c.field ? String(r[c.field]) : undefined),
                         filterValue: (r, c) => c.field ? String(r[c.field]) : undefined,
-                        format: getVNodeProp<VNode>(node, "format") ?? textColumnValueComponent,
+                        format: getVNodeProp<VNode>(node, "format") ?? TextCell,
                         props: {}
                     });
                 }
@@ -437,7 +421,7 @@ table.table-obsidian th.grid-error > .alert {
                 name,
                 title: getVNodeProp<string>(node, "title"),
                 field,
-                format: node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? textColumnValueComponent,
+                format: node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? TextCell,
                 filter: getVNodeProp<IGridColumnFilter>(node, "filter"),
                 uniqueValue,
                 sortValue,

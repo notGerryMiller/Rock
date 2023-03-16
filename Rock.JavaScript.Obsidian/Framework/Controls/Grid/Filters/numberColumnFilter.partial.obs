@@ -5,20 +5,25 @@
                       :showBlankItem="false"
                       :items="searchTypeItems" />
 
-        <NumberBox v-if="showSearchValue"
+        <NumberBox v-if="showFirstValue"
                    inputClasses="mb-2"
                    v-model="searchValue"
-                   placeholder="search" />
+                   :placeholder="firstValuePlaceholder" />
+
+        <NumberBox v-if="showSecondValue"
+                   inputClasses="mb-2"
+                   v-model="secondSearchValue"
+                   placeholder="to" />
     </div>
 </template>
 
 <script setup lang="ts">
     import NumberBox from "@Obsidian/Controls/numberBox";
-    import { ref, PropType, watch, computed } from "vue";
-    import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ref, watch, computed } from "vue";
     import DropDownList from "@Obsidian/Controls/dropDownList";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
     import { NumberFilterMethod, NumberFilterMethodDescription } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
+    import { standardFilterProps } from "@Obsidian/Core/Controls/grid";
 
     type NumberSearchBag = {
         method: NumberFilterMethod;
@@ -28,25 +33,10 @@
         secondValue?: number;
     };
 
-    const props = defineProps({
-        modelValue: {
-            type: Object as PropType<unknown>,
-            required: false
-        },
-
-        column: {
-            type: Object as PropType<GridColumnDefinition>,
-            required: true
-        },
-
-        rows: {
-            type: Array as PropType<Record<string, unknown>[]>,
-            required: true
-        }
-    });
+    const props = defineProps(standardFilterProps);
 
     const emit = defineEmits<{
-        (event: "update:modelValue", value: unknown): void
+        (e: "update:modelValue", value: unknown): void
     }>();
 
     const searchMethod = ref(NumberFilterMethod.Equals.toString());
@@ -60,7 +50,7 @@
         };
     }));
 
-    const showSearchValue = computed((): boolean => {
+    const showFirstValue = computed((): boolean => {
         return searchMethod.value === NumberFilterMethod.Equals.toString()
             || searchMethod.value === NumberFilterMethod.DoesNotEqual.toString()
             || searchMethod.value === NumberFilterMethod.GreaterThan.toString()
@@ -71,8 +61,18 @@
             || searchMethod.value === NumberFilterMethod.TopN.toString();
     });
 
+    const firstValuePlaceholder = computed((): string => {
+        return searchMethod.value === NumberFilterMethod.Between.toString()
+            ? "from"
+            : "value";
+    });
+
+    const showSecondValue = computed((): boolean => {
+        return searchMethod.value === NumberFilterMethod.Between.toString();
+    });
+
     function updateModelValue(): void {
-        if (searchValue.value === null && showSearchValue.value) {
+        if (searchValue.value === null && showFirstValue.value) {
             emit("update:modelValue", undefined);
             return;
         }
