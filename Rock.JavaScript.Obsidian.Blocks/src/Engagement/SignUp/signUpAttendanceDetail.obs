@@ -1,14 +1,14 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <Alert v-if="blockErrorMessage" alertType="warning">
+    <Alert v-if="blockErrorMessage" :alertType="AlertType.Warning">
         {{ blockErrorMessage }}
     </Alert>
 
-    <Alert v-if="errorMessage" alertType="warning">
+    <Alert v-if="errorMessage" :alertType="AlertType.Warning">
         {{ errorMessage }}
     </Alert>
 
-    <Alert v-if="successMessage" alertType="success" :dismissible="true" @dismiss="successMessage = ''">
+    <Alert v-if="successMessage" :alertType="AlertType.Success" :dismissible="true" @dismiss="successMessage = ''">
         {{ successMessage }}
     </Alert>
 
@@ -28,6 +28,7 @@
     import CheckboxList from "@Obsidian/Controls/checkBoxList";
     import RockButton from "@Obsidian/Controls/rockButton";
     import RockForm from "@Obsidian/Controls/rockForm";
+    import { AlertType } from "@Obsidian/Enums/Controls/alertType";
     import { HttpResult } from "@Obsidian/Types/Utility/http";
     import { useConfigurationValues, useReloadBlock, onConfigurationValuesChanged, useInvokeBlockAction } from "@Obsidian/Utility/block";
     import { SignUpAttendanceBag } from "@Obsidian/ViewModels/Blocks/Engagement/SignUp/SignUpAttendanceDetail/signUpAttendanceBag";

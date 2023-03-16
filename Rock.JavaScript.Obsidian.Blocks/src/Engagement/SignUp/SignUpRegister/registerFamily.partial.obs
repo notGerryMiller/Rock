@@ -1,6 +1,6 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <Alert v-if="!registrar" alertType="warning">
+    <Alert v-if="!registrar" :alertType="AlertType.Warning">
         {{ unableToRegisterMsgPrefix }}.
     </Alert>
 
@@ -83,6 +83,7 @@
     import EmailBox from "@Obsidian/Controls/emailBox";
     import PhoneNumberBox from "@Obsidian/Controls/phoneNumberBox.obs";
     import RadioButtonList from "@Obsidian/Controls/radioButtonList";
+    import { AlertType } from "@Obsidian/Enums/Controls/alertType";
     import { SignUpRegistrantBag } from "@Obsidian/ViewModels/Blocks/Engagement/SignUp/SignUpRegister/signUpRegistrantBag";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 

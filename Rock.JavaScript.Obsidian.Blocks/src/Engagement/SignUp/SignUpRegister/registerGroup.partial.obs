@@ -1,6 +1,6 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <Alert v-if="!identifiableGroupMembers.length" alertType="warning">
+    <Alert v-if="!identifiableGroupMembers.length" :alertType="AlertType.Warning">
         No group members found to register for this project.
     </Alert>
 
@@ -26,6 +26,7 @@
     import ListUnmetRequirements from "./listUnmetRequirements.partial.obs";
     import Alert from "@Obsidian/Controls/alert.obs";
     import CheckBoxList from "@Obsidian/Controls/checkBoxList";
+    import { AlertType } from "@Obsidian/Enums/Controls/alertType";
     import { SignUpRegistrantBag } from "@Obsidian/ViewModels/Blocks/Engagement/SignUp/SignUpRegister/signUpRegistrantBag";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 

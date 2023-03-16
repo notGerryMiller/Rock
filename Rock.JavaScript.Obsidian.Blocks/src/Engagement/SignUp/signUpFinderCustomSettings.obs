@@ -2,7 +2,9 @@
 <template>
     <Modal v-model="isModalOpen" title="Sign-Up Finder Settings" :saveText="saveButtonText" @save="onSave">
 
-        <Alert v-if="errorMessage" alertType="warning" />
+        <Alert v-if="errorMessage" :alertType="AlertType.Warning">
+            {{ errorMessage }}
+        </Alert>
 
         <LoadingIndicator v-else-if="isLoading" :delay="500" />
 
@@ -215,6 +217,7 @@
     import PanelWidget from "@Obsidian/Controls/panelWidget";
     import RadioButtonList from "@Obsidian/Controls/radioButtonList";
     import TextBox from "@Obsidian/Controls/textBox";
+    import { AlertType } from "@Obsidian/Enums/Controls/alertType";
     import { DefinedType } from "@Obsidian/SystemGuids/definedType";
     import { EntityType } from "@Obsidian/SystemGuids/entityType";
     import { Guid } from "@Obsidian/Types";
