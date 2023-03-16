@@ -6,11 +6,16 @@
 
         <div class="row">
             <div class="col-md-12">
-                <div v-if="flagCount > 0" class="pull-right">
-                    <span class="label label-warning" tabindex="-1" data-toggle="tooltip"
+                <div class="pull-right">
+                    <span ref="flagCountRef" v-if="props.modelValue?.flagCount" class="label label-warning" tabindex="-1" data-toggle="tooltip"
                         data-placement="auto" data-container="body" data-html="true"
                         data-original-title="To clear the flags you'll have to re-approve this request.">
-                        <i class="fa fa-flag"></i> flagged {{ flagCount }} times
+                            <i class="fa fa-flag"></i> flagged {{ props.modelValue?.flagCount }} times
+                    </span>
+                    <span v-if="props.modelValue?.isUrgent" class="label label-danger"><i class="fa fa-exclamation-circle"></i> Urgent</span>
+                    <span ref="prayerCountRef" v-if="props.modelValue?.prayerCount" class="badge" title="" data-toggle="tooltip"
+                        :data-original-title="props.modelValue?.prayerCount + 'prayers offered by the team for this request.'">
+                            {{ props.modelValue?.prayerCount}} prayers
                     </span>
                 </div>
                 <ValueDetailList :modelValue="leftSideValues" />
@@ -24,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, PropType, ref } from "vue";
+    import { computed, PropType, ref, watch } from "vue";
     import ValueDetailList from "@Obsidian/Controls/valueDetailList";
     import { ValueDetailListItemBuilder } from "@Obsidian/Core/Controls/valueDetailListItemBuilder";
     import { ValueDetailListItem } from "@Obsidian/Types/Controls/valueDetailListItem";
@@ -47,7 +52,18 @@
 
     const attributes = ref(props.modelValue?.attributes ?? {});
     const attributeValues = ref(props.modelValue?.attributeValues ?? {});
-    const flagCount = props.modelValue?.flagCount ?? 0;
+
+
+    // enable the tooltips for the badges
+    const jquery = window["$"];
+    const flagCountRef = ref<HTMLElement | null>(null);
+    watch(flagCountRef, () => {
+        jquery(flagCountRef.value).tooltip();
+    });
+    const prayerCountRef = ref(null);
+    watch(prayerCountRef, () => {
+        jquery(prayerCountRef.value).tooltip();
+    });
 
     // #endregion
 

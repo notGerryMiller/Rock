@@ -22,6 +22,13 @@
             <div class="col-md-3">
                 <CheckBox v-model="isActive"
                           label="Active" />
+                <div v-if="props.modelValue?.flagCount">
+                    <span ref="flagCountRef" class="label label-warning" tabindex="-1" data-toggle="tooltip"
+                        data-placement="auto" data-container="body" data-html="true"
+                        data-original-title="re-approve the request to clear the flags">
+                        <i class="fa fa-flag"></i> flagged {{ props.modelValue?.flagCount }} times
+                    </span>
+                </div>
                 <CheckBoxList label="Options"
                           v-model="optionsListValue"
                           :items="optionsList" />
@@ -158,6 +165,13 @@
     // #endregion
 
     // #region Functions
+
+    // enable the tooltips for the badges
+    const jquery = window["$"];
+    const flagCountRef = ref<HTMLElement | null>(null);
+    watch(flagCountRef, () => {
+        jquery(flagCountRef.value).tooltip();
+    });
 
     // #endregion
 
