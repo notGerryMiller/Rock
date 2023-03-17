@@ -22,6 +22,7 @@ using System.Text;
 
 using Rock.Attribute;
 using Rock.Data;
+using Rock.Logging;
 using Rock.Model;
 
 namespace Rock.Jobs
@@ -51,14 +52,23 @@ namespace Rock.Jobs
         /// <inheritdoc cref="RockJob.Execute()"/>
         public override void Execute()
         {
-                        int sqlCommandTimeout = GetAttributeValue( TIMEOUT_KEY ).AsIntegerOrNull() ?? 300;
+            int sqlCommandTimeout = GetAttributeValue( TIMEOUT_KEY ).AsIntegerOrNull() ?? 300;
+
             StringBuilder results = new StringBuilder();
             int updatedDataViewCount = 0;
             var errors = new List<string>();
             List<Exception> exceptions = new List<Exception>();
 
+            var log = new RockProcessLogger
+            {
+                LogDomain = RockLogDomains.Jobs,
+                DefaultTopic = "UpdatePersistedDataViews"
+            };
+
             using ( var rockContextList = new RockContext() )
             {
+                log.Write( $"Job started.", logLevel: RockLogLevel.Info );
+
                 var currentDateTime = RockDateTime.Now;
 
                 // get a list of all the data views that need to be refreshed
@@ -71,18 +81,30 @@ namespace Rock.Jobs
                         .Select( a => a.Id );
 
                 var expiredPersistedDataViewsIdsList = expiredPersistedDataViewIds.ToList();
+                var totalItemCount = expiredPersistedDataViewsIdsList.Count;
+                var currentItemCount = 0;
+
+                log.Write( $"Processing expired Data Views... [DataViewCount={totalItemCount}, Timeout={sqlCommandTimeout}s]" );
+
                 foreach ( var dataViewId in expiredPersistedDataViewsIdsList )
                 {
+                    currentItemCount++;
                     using ( var persistContext = new RockContext() )
                     {
                         var dataView = new DataViewService( persistContext ).Get( dataViewId );
                         var name = dataView.Name;
                         try
                         {
-                            this.UpdateLastStatusMessage( $"Updating {dataView.Name}" );
+                            log.DefaultTopic = $"UpdatePersistedDataViews:{name}";
+                            log.Write( $"Processing... [{currentItemCount} of {totalItemCount}]" );
+
+                            this.UpdateLastStatusMessage( $"{name} Updating..." );
                             dataView.PersistResult( sqlCommandTimeout );
 
+                            log.Write( "Saving..." );
                             persistContext.SaveChanges();
+
+                            log.Write( $"Data View updated. [ElapsedTime={dataView.PersistedLastRunDurationMilliseconds ?? 0 }ms]" );
 
                             updatedDataViewCount++;
                         }
@@ -95,11 +117,15 @@ namespace Rock.Jobs
                             var ex2 = new Exception( errorMessage, ex );
                             exceptions.Add( ex2 );
                             ExceptionLogService.LogException( ex2, null );
+
+                            log.Write( $"Data View update failed. [Exception={ex2.Message}]" );
                             continue;
                         }
                     }
                 }
 
+                log.DefaultTopic = "UpdatePersistedDataViews";
+                log.Write( $"Job completed. [Processed={totalItemCount}, Updated={updatedDataViewCount}]", logLevel: RockLogLevel.Info );
             }
 
             // Format the result message
@@ -121,6 +147,22 @@ namespace Rock.Jobs
                 {
                     throw new AggregateException( exceptions.ToArray() );
                 }
+            }
+        }
+
+        /// <summary>
+        /// Simplifies writing entries to the RockLog for a specific process.
+        /// </summary>
+        private class RockProcessLogger
+        {
+            public string LogDomain { get; set; }
+            public string DefaultTopic { get; set; }
+            public RockLogLevel DefaultLogLevel { get; set; } = RockLogLevel.Debug;
+
+            public void Write( string message, string topic = null, RockLogLevel? logLevel = null )
+            {
+                var msg = $"({ topic ?? DefaultTopic }) { message }";
+                RockLogger.Log.WriteToLog( logLevel ?? DefaultLogLevel, domain: LogDomain, messageTemplate: msg );
             }
         }
     }
