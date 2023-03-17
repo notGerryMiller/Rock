@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, PropType, ref, watch } from "vue";
+    import { computed, PropType, ref, watch, onMounted } from "vue";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
     import CategoryPicker from "@Obsidian/Controls/categoryPicker";
     import DatePicker from "@Obsidian/Controls/datePicker.obs";
@@ -169,8 +169,8 @@
     // enable the tooltips for the badges
     const jquery = window["$"];
     const flagCountRef = ref<HTMLElement | null>(null);
-    watch(flagCountRef, () => {
-        jquery(flagCountRef.value).tooltip();
+    onMounted(() => {
+        jquery(flagCountRef?.value).tooltip();
     });
 
     // #endregion
