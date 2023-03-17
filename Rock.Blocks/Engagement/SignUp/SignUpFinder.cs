@@ -354,12 +354,12 @@ namespace Rock.Blocks.Engagement.SignUp
                             </p>
                         {% endif %}
                     </div>
-                    {% if project.ScheduleHasFutureStartDateTime %}
-                        <div class=""card-footer bg-white border-0"">
-                            <a href=""{{ project.ProjectDetailPageUrl }}"" class=""btn btn-link btn-xs pl-0 text-muted"">Details</a>
+                    <div class=""card-footer bg-white border-0"">
+                        <a href=""{{ project.ProjectDetailPageUrl }}"" class=""btn btn-link btn-xs pl-0 text-muted"">Details</a>
+                        {% if project.ShowRegisterButton == true %}
                             <a href=""{{ project.RegisterPageUrl }}"" class=""btn btn-warning btn-xs pull-right"">Register</a>
-                        </div>
-                    {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         {% endfor %}
@@ -1727,7 +1727,7 @@ namespace Rock.Blocks.Engagement.SignUp
                     }
 
                     /*
-                     * This more complex approach uses a dynamic/floating minuend (the first number in a subtraction problem):
+                     * This more complex approach uses a dynamic/floating minuend:
                      * 1) If the max value is defined, use that;
                      * 2) Else, if the desired value is defined, use that;
                      * 3) Else, if the min value is defined, use that;
@@ -1742,15 +1742,15 @@ namespace Rock.Blocks.Engagement.SignUp
                     //            : int.MaxValue;
 
                     /*
-                     * This approach still uses a dynamic minuend, but it's much simpler:
-                     * 1) If the max value is defined, use that;
-                     * 2) Else, use int.MaxValue (there is no limit to the slots available).
+                     * Simple approach:
+                     * 1) If the max value is defined, subtract participant count from that;
+                     * 2) Otherwise, use int.MaxValue (there is no limit to the slots available).
                      */
-                    var minuend = this.SlotsMax.GetValueOrDefault() > 0
-                        ? this.SlotsMax.Value
-                        : int.MaxValue;
-
-                    var available = minuend - this.ParticipantCount;
+                    var available = int.MaxValue;
+                    if ( this.SlotsMax.GetValueOrDefault() > 0 )
+                    {
+                        available = this.SlotsMax.Value - this.ParticipantCount;
+                    }
 
                     return available < 0 ? 0 : available;
                 }
@@ -1769,6 +1769,13 @@ namespace Rock.Blocks.Engagement.SignUp
                 {
                     availableSpots = this.SlotsAvailable;
                 }
+
+                var showRegisterButton = this.ScheduleHasFutureStartDateTime
+                    &&
+                    (
+                        !availableSpots.HasValue
+                        || availableSpots.Value > 0
+                    );
 
                 string mapCenter = null;
                 if ( this.Location.Latitude.HasValue && this.Location.Longitude.HasValue )
@@ -1790,8 +1797,8 @@ namespace Rock.Blocks.Engagement.SignUp
                     Description = this.Description,
                     ScheduleName = this.ScheduleName,
                     FriendlySchedule = this.FriendlySchedule,
-                    ScheduleHasFutureStartDateTime = this.ScheduleHasFutureStartDateTime,
                     AvailableSpots = availableSpots,
+                    ShowRegisterButton = showRegisterButton,
                     DistanceInMiles = this.DistanceInMiles,
                     MapCenter = mapCenter,
                     ProjectDetailPageUrl = projectDetailPageUrl,
@@ -1817,9 +1824,9 @@ namespace Rock.Blocks.Engagement.SignUp
 
             public string FriendlySchedule { get; set; }
 
-            public bool ScheduleHasFutureStartDateTime { get; set; }
-
             public int? AvailableSpots { get; set; }
+
+            public bool ShowRegisterButton { get; set; }
 
             public double? DistanceInMiles { get; set; }
 

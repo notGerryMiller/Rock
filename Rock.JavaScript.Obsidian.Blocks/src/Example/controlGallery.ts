@@ -202,6 +202,10 @@ import RacePicker from "@Obsidian/Controls/racePicker.obs";
 import MediaElementPicker from "@Obsidian/Controls/mediaElementPicker.obs";
 import MergeFieldPicker from "@Obsidian/Controls/mergeFieldPicker.obs";
 import CategorizedValuePicker from "@Obsidian/Controls/categorizedValuePicker.obs";
+import ReminderTypePicker from "@Obsidian/Controls/reminderTypePicker.obs";
+import GroupRolePicker from "@Obsidian/Controls/groupRolePicker.obs";
+import ModalAlert from "@Obsidian/Controls/modalAlert.obs";
+import { ModalAlertType } from "@Obsidian/Enums/Controls/modalAlertType";
 
 // #region Gallery Support
 
@@ -7006,6 +7010,178 @@ const categorizedValuePickerGallery = defineComponent({
 </GalleryAndResult>`
 });
 
+
+/** Demonstrates reminder type picker */
+const reminderTypePickerGallery = defineComponent({
+    name: "ReminderTypePickerGallery",
+    components: {
+        GalleryAndResult,
+        CheckBox,
+        ReminderTypePicker,
+        DropDownList,
+        EntityTypePicker,
+        TextBox,
+        NumberUpDown
+    },
+    setup() {
+        return {
+            columnCount: ref(0),
+            displayStyle: ref(PickerDisplayStyle.Auto),
+            displayStyleItems,
+            enhanceForLongLists: ref(false),
+            multiple: ref(false),
+            showBlankItem: ref(false),
+            value: ref(null),
+            required: ref(false),
+            entityTypeGuid: ref(null),
+            importCode: getSfcControlImportPath("reminderTypePicker"),
+            exampleCode: `<ReminderTypePicker label="Reminder Type" v-model="value" />`
+        };
+    },
+    template: `
+<GalleryAndResult
+    :value="value"
+    :importCode="importCode"
+    :exampleCode="exampleCode"
+    enableReflection >
+
+    <ReminderTypePicker
+        label="Reminder Type"
+        v-model="value"
+        :entityTypeGuid="entityTypeGuid?.value"
+        :multiple="multiple"
+        :columnCount="columnCount"
+        :enhanceForLongLists="enhanceForLongLists"
+        :displayStyle="displayStyle"
+        :showBlankItem="showBlankItem" />
+
+    <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <CheckBox label="Multiple" v-model="multiple" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Enhance For Long Lists" v-model="enhanceForLongLists" />
+            </div>
+            <div class="col-md-4">
+                <CheckBox label="Show Blank Item" v-model="showBlankItem" />
+            </div>
+            <div class="col-md-4">
+                <DropDownList label="Display Style" :showBlankItem="false" v-model="displayStyle" :items="displayStyleItems" />
+            </div>
+            <div class="col-md-4">
+                <NumberUpDown label="Column Count" v-model="columnCount" :min="0" />
+            </div>
+            <div class="col-md-4">
+                <EntityTypePicker label="For Entity Type" v-model="entityTypeGuid" enhanceForLongLists showBlankItem />
+            </div>
+        </div>
+        <p class="text-semibold font-italic">Not all options have been implemented yet.</p>
+    </template>
+</GalleryAndResult>`
+});
+
+/** Demonstrates group role picker */
+const groupRolePickerGallery = defineComponent({
+    name: "GroupRolePickerGallery",
+    components: {
+        GalleryAndResult,
+        CheckBox,
+        GroupRolePicker,
+        TextBox
+    },
+    setup() {
+        return {
+            value: ref(null),
+            required: ref(false),
+            importCode: getSfcControlImportPath("groupRolePicker"),
+            exampleCode: `<GroupRolePicker label="Group Type and Role" v-model="value" />`
+        };
+    },
+    template: `
+<GalleryAndResult
+    :value="value"
+    :importCode="importCode"
+    :exampleCode="exampleCode"
+    enableReflection >
+
+    <GroupRolePicker label="Group Type and Role" v-model="value" :rules="required ? 'required' : ''" />
+
+    <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <CheckBox label="Required" v-model="required" />
+            </div>
+        </div>
+        <p class="text-semibold font-italic">Not all options have been implemented yet.</p>
+    </template>
+</GalleryAndResult>`
+});
+
+/** Demonstrates modal alert */
+const modalAlertGallery = defineComponent({
+    name: "ModalAlertGallery",
+    components: {
+        GalleryAndResult,
+        RockButton,
+        ModalAlert,
+        TextBox,
+        DropDownList
+    },
+    setup() {
+        const types = [
+            {
+                text: "Alert",
+                value: "Alert"
+            },
+            {
+                text: "Information",
+                value: "Information"
+            },
+            {
+                text: "Warning",
+                value: "Warning"
+            },
+            {
+                text: "None",
+                value: "None"
+            }
+        ];
+
+        return {
+            types,
+            type: ref("Alert"),
+            isShowing: ref(false),
+            message: ref("Message I want to alert you to."),
+            importCode: getSfcControlImportPath("modalAlert"),
+            exampleCode: `<ModalAlert v-model="isShowing" type="ModalAlertType.Alert">Message I want to alert you to.</ModalAlert>`
+        };
+    },
+    template: `
+<GalleryAndResult
+    :importCode="importCode"
+    :exampleCode="exampleCode" >
+
+    <ModalAlert v-model="isShowing" :type="type">{{message}}</ModalAlert>
+
+    <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <RockButton @click="isShowing = true">Show</RockButton>
+            </div>
+            <div class="col-md-4">
+                <TextBox label="Message" v-model="message" />
+            </div>
+            <div class="col-md-4">
+                <DropDownList label="Alert Type" v-model="type" :items="types" />
+            </div>
+        </div>
+        <p class="text-semibold font-italic">Not all options have been implemented yet.</p>
+    </template>
+</GalleryAndResult>`
+});
+
+
 const controlGalleryComponents: Record<string, Component> = [
     alertGallery,
     attributeValuesContainerGallery,
@@ -7136,6 +7312,9 @@ const controlGalleryComponents: Record<string, Component> = [
     mediaElementPickerGallery,
     mergeFieldPickerGallery,
     categorizedValuePickerGallery,
+    reminderTypePickerGallery,
+    groupRolePickerGallery,
+    modalAlertGallery,
 ]
     // Sort list by component name
     .sort((a, b) => a.name.localeCompare(b.name))

@@ -284,6 +284,12 @@ namespace Rock.Jobs
 
             RunCleanupTask( "remove old notification message types", () => RemoveOldNotificationMessageTypes() );
 
+            RunCleanupTask( "update person viewed count", () => UpdatePersonViewedCount() );
+
+            RunCleanupTask( "update analytics source date age and age bracket", () => CalculateAgeAndAgeBracketOnAnalyticsSourceDate() );
+
+            RunCleanupTask( "update person age and age range", () => UpdateAgeAndAgeRangeOnPerson() );
+
             /*
              * 21-APR-2022 DMV
              *
@@ -2533,6 +2539,139 @@ SELECT @@ROWCOUNT
             }
 
             return deletedCount;
+        }
+
+        /// <summary>
+        /// Updates Person.ViewedCount based on the count of ViewCount.PersonId for the past 90 days
+        /// </summary>
+        /// <returns>The number of Person rows updated</returns>
+        private int UpdatePersonViewedCount()
+        {
+            var updateCount = 0;
+            using ( var rockContext = new RockContext() )
+            {
+                var updateQuery = @"
+                    UPDATE p
+                    SET p.[ViewedCount] = u.[ViewCount]
+                    FROM [Person] p
+                    INNER JOIN (
+                        SELECT
+                            pat.[PersonId]
+                            , COUNT(*) AS [ViewCount]
+                        FROM [PersonViewed] pv
+                            INNER JOIN [PersonAlias] pat ON pat.[Id] = pv.[TargetPersonAliasId]
+                        WHERE pv.[ViewDateTime] > DATEADD( DAY, -90, GETDATE() )
+                        GROUP BY pat.[PersonId]
+                    ) AS u ON u.[PersonId] = p.[Id]";
+
+                rockContext.Database.CommandTimeout = commandTimeout;
+                updateCount = rockContext.Database.ExecuteSqlCommand( updateQuery );
+            }
+
+            return updateCount;
+        }
+
+        /// <summary>
+        /// Calculates the age and age bracket on analytics source date.
+        /// </summary>
+        private int CalculateAgeAndAgeBracketOnAnalyticsSourceDate()
+        {
+            const string UpdateAgeAndAgeBracketSql = @"
+DECLARE @Today DATE = GETDATE()
+BEGIN 
+	UPDATE A
+	SET [Age] = DATEDIFF(YEAR, A.[Date], @Today) - 
+	CASE 
+		WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], @Today), A.[Date]) > @Today THEN 1
+		ELSE 0
+	END,
+	[AgeBracket] = CASE
+		WHEN DATEDIFF(YEAR, A.[Date], @Today) - 
+			CASE 
+				WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], @Today), A.[Date]) > @Today THEN 1
+			ELSE 0
+		END
+		BETWEEN 0 AND 12 THEN 1
+		WHEN DATEDIFF(YEAR, A.[Date], @Today) - 
+			CASE 
+				WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], @Today), A.[Date]) > @Today THEN 1
+			ELSE 0
+		END BETWEEN 13 AND 17 THEN 2
+		WHEN DATEDIFF(YEAR, A.[Date], @Today) - 
+			CASE 
+				WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], @Today), A.[Date]) > @Today THEN 1
+			ELSE 0
+		END BETWEEN 18 AND 24 THEN 3
+		WHEN DATEDIFF(YEAR, A.[Date], @Today) - 
+			CASE 
+				WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], @Today), A.[Date]) > @Today THEN 1
+			ELSE 0
+		END BETWEEN 25 AND 34 THEN 4
+		WHEN DATEDIFF(YEAR, A.[Date], @Today) - 
+			CASE 
+				WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], @Today), A.[Date]) > @Today THEN 1
+			ELSE 0
+		END BETWEEN 35 AND 44 THEN 5
+		WHEN DATEDIFF(YEAR, A.[Date], @Today) - 
+			CASE 
+				WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], @Today), A.[Date]) > @Today THEN 1
+			ELSE 0
+		END BETWEEN 45 AND 54 THEN 6
+		WHEN DATEDIFF(YEAR, A.[Date], @Today) - 
+			CASE 
+				WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], @Today), A.[Date]) > @Today THEN 1
+			ELSE 0
+		END BETWEEN 55 AND 65 THEN 7
+		ELSE 8
+	END
+	FROM AnalyticsSourceDate A
+	INNER JOIN AnalyticsSourceDate B
+	ON A.[DateKey] = B.[DateKey]
+	WHERE A.[Date] <= @Today
+END
+";
+            using ( var rockContext = new RockContext() )
+            {
+                int result = rockContext.Database.ExecuteSqlCommand( UpdateAgeAndAgeBracketSql );
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Updates the age and age range on person.
+        /// </summary>
+        /// <returns></returns>
+        private int UpdateAgeAndAgeRangeOnPerson()
+        {
+            const string UpdateAgeAndAgeRangeSql = @"
+BEGIN
+	UPDATE Person
+	SET [BirthDateKey] = FORMAT([BirthDate],'yyyyMMdd')
+	WHERE [BirthDate] IS NOT NULL AND [BirthDateKey] IS NULL
+
+	UPDATE P
+	SET P.[Age] = CASE
+		WHEN P.[DeceasedDate] IS NOT NULL THEN
+		DATEDIFF(YEAR, A.[Date], P.[DeceasedDate]) - 
+			CASE 
+				WHEN DATEADD(YY, DATEDIFF(yy, A.[Date], P.[DeceasedDate]), P.[DeceasedDate]) > p.[DeceasedDate] THEN 1
+				ELSE 0
+				END
+			ELSE A.[Age] 
+			END,
+	P.[AgeBracket] = A.[AgeBracket]
+	FROM Person P
+	INNER JOIN AnalyticsSourceDate A
+	ON A.[DateKey] = P.[BirthDateKey]
+	WHERE P.[BirthDate] IS NOT NULL
+    AND P.[IsDeceased] = 0
+END
+";
+            using ( var rockContext = new RockContext() )
+            {
+                int result = rockContext.Database.ExecuteSqlCommand( UpdateAgeAndAgeRangeSql );
+                return result;
+            }
         }
 
         /// <summary>
