@@ -46,6 +46,9 @@
   <ItemGroup>
     <Compile Include="Blocks\Prayer\PrayerRequestDetail\PrayerRequestBag.cs" />
     <Compile Include="Blocks\Prayer\PrayerRequestDetail\PrayerRequestDetailOptionsBag.cs" />
+    <Compile Include="Blocks\Core\ScheduleDetail\ScheduleBag.cs" />
+    <Compile Include="Blocks\Core\ScheduleDetail\ScheduleDetailOptionsBag.cs" />
+    <Compile Include="Blocks\Crm\PhotoOptOut\PhotoOptOutBag.cs" />
     <Compile Include="Blocks\Security\AccountEntry\AccountEntryAccountInfoBag.cs" />
     <Compile Include="Blocks\Security\AccountEntry\AccountEntryCompletedStepBag.cs" />
     <Compile Include="Blocks\Security\AccountEntry\AccountEntryConfirmationSentStepBag.cs" />
