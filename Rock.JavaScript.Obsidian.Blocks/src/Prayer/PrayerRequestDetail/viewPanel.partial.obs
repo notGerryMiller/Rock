@@ -36,6 +36,7 @@
     import ValueDetailList from "@Obsidian/Controls/valueDetailList";
     import { ValueDetailListItemBuilder } from "@Obsidian/Core/Controls/valueDetailListItemBuilder";
     import { ValueDetailListItem } from "@Obsidian/Types/Controls/valueDetailListItem";
+    import { tooltip } from "@Obsidian/Utility/tooltip";
     import { PrayerRequestBag } from "@Obsidian/ViewModels/Blocks/Prayer/PrayerRequestDetail/prayerRequestBag";
     import { PrayerRequestDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Prayer/PrayerRequestDetail/prayerRequestDetailOptionsBag";
 
@@ -58,12 +59,15 @@
 
 
     // enable the tooltips for the badges
-    const jquery = window["$"];
-    const flagCountRef = ref<HTMLElement | null>(null);
-    const prayerCountRef = ref<HTMLElement | null>(null);
+    const flagCountRef = ref<Element | null>(null);
+    const prayerCountRef = ref<Element | null>(null);
     onMounted(() => {
-        jquery(flagCountRef?.value).tooltip();
-        jquery(prayerCountRef?.value).tooltip();
+        if(flagCountRef?.value) {
+            tooltip(flagCountRef.value);
+        }
+        if(prayerCountRef?.value) {
+            tooltip(prayerCountRef.value);
+        }
     });
 
     // #endregion

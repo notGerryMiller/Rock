@@ -75,6 +75,7 @@
     import CheckBoxList from "@Obsidian/Controls/checkBoxList";
     import CampusPicker from "@Obsidian/Controls/campusPicker.obs";
     import Toggle from "@Obsidian/Controls/toggle";
+    import { tooltip } from "@Obsidian/Utility/tooltip";
     import TextBox from "@Obsidian/Controls/textBox";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
     import { EntityType } from "@Obsidian/SystemGuids/entityType";
@@ -167,10 +168,11 @@
     // #region Functions
 
     // enable the tooltips for the badges
-    const jquery = window["$"];
     const flagCountRef = ref<HTMLElement | null>(null);
     onMounted(() => {
-        jquery(flagCountRef?.value).tooltip();
+        if(flagCountRef?.value) {
+            tooltip(flagCountRef.value);
+        }
     });
 
     // #endregion
