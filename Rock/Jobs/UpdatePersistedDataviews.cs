@@ -65,27 +65,28 @@ namespace Rock.Jobs
                 var expiredPersistedDataViewIds = new DataViewService( rockContextList ).Queryable()
                     .Where( a => a.PersistedScheduleIntervalMinutes.HasValue )
                         .Where( a =>
-                            ( a.PersistedLastRefreshDateTime == null
-                            || System.Data.Entity.SqlServer.SqlFunctions.DateAdd( "mi", a.PersistedScheduleIntervalMinutes.Value, a.PersistedLastRefreshDateTime.Value ) < currentDateTime ) )
+                            ( a.PersistedLastRefreshDateTime == null )
+                            || ( System.Data.Entity.SqlServer.SqlFunctions.DateAdd( "mi", a.PersistedScheduleIntervalMinutes.Value, a.PersistedLastRefreshDateTime.Value ) < currentDateTime ) )
                         .Select( a => a.Id );
 
                 var expiredPersistedDataViewsIdsList = expiredPersistedDataViewIds.ToList();
 
-                // Collect the DataViews with persisted schedules that do not have a last refresh date or it has been at least an hour since they were updated. 
-                var anHourAgo = currentDateTime.AddHours( -1 );
+                // Collect the DataViews with persisted schedules that do not have a last refresh date or need to be refreshed. 
                 var persistedScheduleDataViewIds = new DataViewService( rockContextList ).Queryable()
-                    .Where( a => a.PersistedScheduleId.HasValue && ( a.PersistedLastRefreshDateTime == null || a.PersistedLastRefreshDateTime.Value <= anHourAgo ) );
+                    .Where( a => a.PersistedScheduleId.HasValue && ( a.PersistedLastRefreshDateTime == null || a.PersistedLastRefreshDateTime.Value <= currentDateTime ) );
 
-                // For DataViews with schedules that have not been persisted in the last hour,
-                // check to see if they are due to be persisted, and add them to the expired list if they are.
+                // For DataViews with schedules that have not been persisted,
+                // check to see if they are due to be persisted, and add them to the expired dataview list if they are.
                 foreach ( var dataview in persistedScheduleDataViewIds )
                 {
                     var nextDates = dataview.PersistedSchedule
                         .GetScheduledStartTimes( dataview.PersistedLastRefreshDateTime ?? dataview.PersistedSchedule.GetFirstStartDateTime().Value, currentDateTime );
-                    DateTime nextDate = nextDates.Count > 0 ? nextDates.First() : currentDateTime;
-                    if ( nextDate < currentDateTime )
+                    if ( nextDates.Count > 0 )
                     {
-                        expiredPersistedDataViewsIdsList.Add( dataview.Id );
+                        if ( nextDates.First() < currentDateTime )
+                        {
+                            expiredPersistedDataViewsIdsList.Add( dataview.Id );
+                        }
                     }
                 }
 
