@@ -23,12 +23,10 @@ using System.Linq;
 using Rock.Attribute;
 using Rock.Data;
 using Rock.Enums.Blocks.Group.Scheduling;
-using Rock.Enums.Controls;
 using Rock.Field.Types;
 using Rock.Model;
 using Rock.Security;
 using Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler;
-using Rock.ViewModels.Controls;
 using Rock.ViewModels.Utility;
 
 namespace Rock.Blocks.Group.Scheduling
@@ -87,9 +85,9 @@ namespace Rock.Blocks.Group.Scheduling
 
         #region Fields
 
-        private List<Rock.Model.Group> _groups;
-        private List<Rock.Model.GroupLocation> _groupLocations;
-        private List<Rock.Model.Schedule> _schedules;
+        private List<int> _groupIds;
+        private List<int> _locationIds;
+        private List<int> _scheduleIds;
 
         #endregion
 
@@ -158,99 +156,113 @@ namespace Rock.Blocks.Group.Scheduling
         {
             ValidateDateRange( filters );
             GetAuthorizedGroups( rockContext, filters );
-            UpdateLocations( rockContext, filters );
-            UpdateSchedules( rockContext, filters );
+            GetLocationsAndSchedules( rockContext, filters );
         }
 
         /// <summary>
-        /// Validates the date range and sets the first and last "end of week" dates (as well as the friendly date range) on the provided filters.
+        /// Validates the date range and attempts to set the first and last "end of week" dates (as well as the friendly date range) on the provided filters object.
         /// <para>
-        /// If the date range is invalid or in the past, the current "end of week" date will be used to set all date values.
+        /// If either component of the date range is in the past, it will be overwritten with the current date.
         /// </para>
         /// </summary>
         /// <param name="filters">The filters whose date range should be validated.</param>
         private void ValidateDateRange( GroupSchedulerFiltersBag filters )
         {
-            var thisEndOfWeekDate = RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek ).Date;
-            var adjustPicker = false;
+            DateTime? startDate = null;
+            DateTime? endDate = null;
+            if ( filters.DateRange != null )
+            {
+                // Utility method expects this format: SlidingDateRangeType|Number|TimeUnitType|StartDate|EndDate
+                var range = filters.DateRange;
+                var lowerDateString = range.LowerDate?.ToString( "o" );
+                var upperDateString = range.UpperDate?.ToString( "o" );
+                var delimitedValues = $"{range.RangeType}|{range.TimeValue}|{range.TimeUnit}|{lowerDateString}|{upperDateString}";
+                var dateRange = RockDateTimeHelper.CalculateDateRangeFromDelimitedValues( delimitedValues );
+                startDate = dateRange.Start;
+                endDate = dateRange.End;
+            }
 
             DateTime? firstEndOfWeekDate = null;
-            var startDate = filters.DateRange?.LowerDate?.Date;
             if ( startDate.HasValue )
             {
+                if ( startDate.Value < RockDateTime.Today )
+                {
+                    startDate = RockDateTime.Today;
+                }
+
                 firstEndOfWeekDate = startDate.Value.EndOfWeek( RockDateTime.FirstDayOfWeek );
-            }
-            else
-            {
-                firstEndOfWeekDate = thisEndOfWeekDate;
-                adjustPicker = true;
             }
 
             DateTime? lastEndOfWeekDate = null;
-            var endDate = filters.DateRange?.UpperDate?.Date;
             if ( endDate.HasValue )
             {
+                if ( endDate.Value < RockDateTime.Today )
+                {
+                    endDate = RockDateTime.Today;
+                }
+
                 lastEndOfWeekDate = endDate.Value.EndOfWeek( RockDateTime.FirstDayOfWeek );
-            }
-            else
-            {
-                lastEndOfWeekDate = thisEndOfWeekDate;
-                adjustPicker = true;
-            }
-
-            // Make sure we have a date range that makes sense.
-            if ( lastEndOfWeekDate < firstEndOfWeekDate )
-            {
-                lastEndOfWeekDate = firstEndOfWeekDate;
-                adjustPicker = true;
-            }
-
-            // Default to the current week if either a start or end date weren't provided or are in the past.
-            if ( firstEndOfWeekDate.Value < thisEndOfWeekDate || lastEndOfWeekDate.Value < thisEndOfWeekDate )
-            {
-                firstEndOfWeekDate = thisEndOfWeekDate;
-                lastEndOfWeekDate = thisEndOfWeekDate;
-
-                adjustPicker = true;
             }
 
             var format = "M/d";
             string friendlyDateRange = null;
 
-            // This doesn't need to be precise; just need to determine if we should try to list all "end of week" dates or just a range.
-            var numberOfWeeks = ( lastEndOfWeekDate.Value - firstEndOfWeekDate.Value ).TotalDays / 7;
-            if ( numberOfWeeks > 7 )
+            if ( startDate.HasValue && endDate.HasValue )
             {
-                friendlyDateRange = $"{firstEndOfWeekDate.Value.ToString( format )} - {lastEndOfWeekDate.Value.ToString( format )}";
-            }
-            else
-            {
-                var endOfWeekDate = firstEndOfWeekDate.Value;
-                var endOfWeekDates = new List<DateTime>();
-                while ( endOfWeekDate <= lastEndOfWeekDate.Value )
+                // Make sure we have a date range that makes sense.
+                if ( endDate < startDate )
                 {
-                    endOfWeekDates.Add( endOfWeekDate );
-
-                    endOfWeekDate = endOfWeekDate.AddDays( 7 );
+                    endDate = startDate;
+                    lastEndOfWeekDate = firstEndOfWeekDate;
                 }
 
-                friendlyDateRange = string.Join( ", ", endOfWeekDates.Select( d => d.ToString( format ) ) );
+                // This doesn't need to be precise; just need to determine if we should try to list all "end of week" dates or just a range.
+                var numberOfWeeks = ( endDate.Value - startDate.Value ).TotalDays / 7;
+                if ( numberOfWeeks > 6 )
+                {
+                    friendlyDateRange = $"{firstEndOfWeekDate.Value.ToString( format )} - {lastEndOfWeekDate.Value.ToString( format )}";
+                }
+                else
+                {
+                    var endOfWeekDates = new List<DateTime>();
+                    var endOfWeekDate = firstEndOfWeekDate.Value;
+                    while ( endOfWeekDate <= lastEndOfWeekDate.Value )
+                    {
+                        endOfWeekDates.Add( endOfWeekDate );
+                        endOfWeekDate = endOfWeekDate.AddDays( 7 );
+                    }
+
+                    friendlyDateRange = string.Join( ", ", endOfWeekDates.Select( d => d.ToString( format ) ) );
+                }
+            }
+            else if ( firstEndOfWeekDate.HasValue )
+            {
+                friendlyDateRange = $"Beginning on {firstEndOfWeekDate.Value.ToString( format )}";
+
+                // We'll probably want to consider putting a limit on how many weeks into the future may be scheduled.
+            }
+            else if ( lastEndOfWeekDate.HasValue )
+            {
+                var currentEndOfWeekDate = RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek );
+                if ( lastEndOfWeekDate.Value != currentEndOfWeekDate )
+                {
+                    friendlyDateRange = $"{currentEndOfWeekDate.ToString( format )} - {lastEndOfWeekDate.Value.ToString( format )}";
+                }
+                else
+                {
+                    friendlyDateRange = currentEndOfWeekDate.ToString( format );
+                }
+            }
+
+            if ( filters.DateRange != null )
+            {
+                filters.DateRange.LowerDate = startDate;
+                filters.DateRange.UpperDate = endDate;
             }
 
             filters.FirstEndOfWeekDate = firstEndOfWeekDate;
             filters.LastEndOfWeekDate = lastEndOfWeekDate;
             filters.FriendlyDateRange = friendlyDateRange;
-
-            if ( adjustPicker )
-            {
-                // If we made any adjustments above, adjust the UI's sliding date range picker to match.
-                filters.DateRange = new SlidingDateRangeBag
-                {
-                    LowerDate = firstEndOfWeekDate.Value.AddDays( -6 ),
-                    UpperDate = lastEndOfWeekDate.Value,
-                    RangeType = SlidingDateRangeType.DateRange
-                };
-            }
         }
 
         /// <summary>
@@ -281,56 +293,134 @@ namespace Rock.Blocks.Group.Scheduling
             }
 
             // Get the selected groups and preload ParentGroup, as it's needed for a proper Authorization check.
-            var currentPerson = RequestContext.CurrentPerson;
-            _groups = new GroupService( rockContext )
+            var groups = new GroupService( rockContext )
                 .GetByGuids( groupGuids )
                 .Include( g => g.ParentGroup )
                 .AsNoTracking()
+                .Where( g =>
+                    g.IsActive
+                    && !g.IsArchived
+                    && g.GroupType.IsSchedulingEnabled
+                    && !g.DisableScheduling
+                )
                 .ToList();
 
             // Ensure the current user has the correct permission(s) to schedule the selected groups and update the filters if necessary.
-            _groups = _groups
+            groups = groups
                 .Where( g =>
                     g.IsAuthorized( Authorization.EDIT, this.RequestContext.CurrentPerson )
                     || g.IsAuthorized( Authorization.SCHEDULE, this.RequestContext.CurrentPerson )
                 )
                 .ToList();
 
-            filters.Groups = _groups
+            filters.Groups = groups
                 .Select( g => new ListItemBag
                 {
                     Value = g.Guid.ToString(),
                     Text = g.Name
                 } )
                 .ToList();
+
+            // Set aside the final list of group IDs for later use when selecting locations, schedules and occurrences to be scheduled.
+            _groupIds = groups
+                .Select( g => g.Id )
+                .Distinct()
+                .ToList();
         }
 
         /// <summary>
-        /// Updates the locations on the filters object to reflect the groups selected within the filters.
+        /// Gets the available and selected locations and schedules, based on the combined, currently-applied filters.
+        /// <para>
+        /// The locations and schedules will be updated on the filters object.
+        /// </para>
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
-        /// <param name="filters">The filters whose locations should be updated.</param>
-        private void UpdateLocations( RockContext rockContext, GroupSchedulerFiltersBag filters )
+        /// <param name="filters">The filters whose locations and schedules should be loaded.</param>
+        private void GetLocationsAndSchedules( RockContext rockContext, GroupSchedulerFiltersBag filters )
         {
-            if ( _groups?.Any() != true )
+            if ( _groupIds?.Any() != true )
             {
                 filters.Locations = null;
-                return;
-            }
-        }
-
-        /// <summary>
-        /// Updates the schedules on the filters object to reflect the groups, locations and date range selected within the filters.
-        /// </summary>
-        /// <param name="rockContext">The rock context.</param>
-        /// <param name="filters">The filters whose schedules should be updated.</param>
-        private void UpdateSchedules( RockContext rockContext, GroupSchedulerFiltersBag filters )
-        {
-            if ( _groupLocations?.Any() != true )
-            {
                 filters.Schedules = null;
                 return;
             }
+
+            // Get all locations and schedules initially, so we can load the "available" lists.
+            var groupLocationSchedules = new GroupLocationService( rockContext )
+                .Queryable()
+                .AsNoTracking()
+                .Where( gl =>
+                    _groupIds.Contains( gl.GroupId )
+                    && gl.Location.IsActive
+                )
+                .SelectMany( gl => gl.Schedules, ( gl, s ) => new
+                {
+                    gl.Group,
+                    gl.Location,
+                    Schedule = s
+                } )
+                .Where( gls =>
+                    gls.Schedule.IsActive
+                    && gls.Schedule.EffectiveStartDate.HasValue
+                    && (
+                        !gls.Schedule.EffectiveEndDate.HasValue
+                        || gls.Schedule.EffectiveEndDate.Value >= RockDateTime.Today
+                    )
+                )
+                .ToList();
+
+            // Refine the available (and selected) locations by the currently-selected schedules and vice versa.
+            var selectedLocationGuids = ( filters.Locations?.SelectedLocations ?? new List<ListItemBag>() )
+                .Select( l => l.Value?.AsGuidOrNull() )
+                .Where( g => g.HasValue )
+                .Select( g => g.Value )
+                .ToList();
+
+            var selectedScheduleGuids = ( filters.Schedules?.SelectedSchedules ?? new List<ListItemBag>() )
+                .Select( s => s.Value?.AsGuidOrNull() )
+                .Where( g => g.HasValue )
+                .Select( g => g.Value )
+                .ToList();
+
+            var availableLocations = groupLocationSchedules
+                .Where( gls => !selectedScheduleGuids.Any() || selectedScheduleGuids.Contains( gls.Schedule.Guid ) )
+                .GroupBy( gls => gls.Location.Id )
+                .Select( grouping => new ListItemBag
+                {
+                    Value = grouping.FirstOrDefault()?.Location?.Guid.ToString(),
+                    Text = grouping.FirstOrDefault()?.Location?.ToString( true )
+                } )
+                .ToList();
+
+            var selectedLocations = availableLocations
+                .Where( l => selectedLocationGuids.Any( selected => selected.ToString() == l.Value ) )
+                .ToList();
+
+            filters.Locations = new GroupSchedulerLocationsBag
+            {
+                AvailableLocations = availableLocations,
+                SelectedLocations = selectedLocations
+            };
+
+            var availableSchedules = groupLocationSchedules
+                .Where( gls => !selectedLocationGuids.Any() || selectedLocationGuids.Contains( gls.Location.Guid ) )
+                .GroupBy( gls => gls.Schedule.Id )
+                .Select( grouping => new ListItemBag
+                {
+                    Value = grouping.FirstOrDefault()?.Schedule?.Guid.ToString(),
+                    Text = grouping.FirstOrDefault()?.Schedule?.ToString()
+                } )
+                .ToList();
+
+            var selectedSchedules = availableSchedules
+                .Where( s => selectedScheduleGuids.Any( selected => selected.ToString() == s.Value ) )
+                .ToList();
+
+            filters.Schedules = new GroupSchedulerSchedulesBag
+            {
+                AvailableSchedules = availableSchedules,
+                SelectedSchedules = selectedSchedules
+            };
         }
 
         /// <summary>

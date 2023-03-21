@@ -92,6 +92,7 @@
     import { GroupSchedulerFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerFiltersBag";
     import { GroupSchedulerInitializationBox } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/GroupSchedulerInitializationBox";
     import { GroupSchedulerResourceSettingsBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerResourceSettingsBag";
+    import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 
     const config = useConfigurationValues<GroupSchedulerInitializationBox>();
 
@@ -127,10 +128,10 @@
     const appliedFiltersText = computed((): string => {
         const appliedFilters = filters.value;
 
-        function getSingleValueOrCount(items: string[] | null | undefined, label: string): string {
+        function getSingleItemOrCount(items: ListItemBag[] | null | undefined, label: string): string {
             if (items?.length) {
                 if (items.length === 1 && items[0]) {
-                    return items[0];
+                    return items[0].text || "";
                 }
 
                 label = items.length === 1 ? label : `${label}s`;
@@ -143,8 +144,8 @@
         const filtersTextSegements: string[] = [
             appliedFilters?.groups?.length ? appliedFilters.groups.map(g => g.text).join(", ") : "",
             appliedFilters?.friendlyDateRange ? `Weeks: ${appliedFilters.friendlyDateRange}` : "",
-            getSingleValueOrCount(appliedFilters?.locations?.selectedLocations, "Location"),
-            getSingleValueOrCount(appliedFilters?.schedules?.selectedSchedules, "Schedule")
+            getSingleItemOrCount(appliedFilters?.locations?.selectedLocations, "Location"),
+            getSingleItemOrCount(appliedFilters?.schedules?.selectedSchedules, "Schedule")
         ];
 
         return ` Filters: ${filtersTextSegements.filter(s => s).join(" | ")}`;
