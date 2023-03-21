@@ -152,6 +152,12 @@ namespace RockWeb.Blocks.Groups
                 countsType = this.GetAttributeValue( "InitialCountSetting" );
             }
 
+            if ( string.IsNullOrWhiteSpace( _groupId ) )
+            {
+                SetAllowedGroupTypes();
+                var group = FindFirstGroup();
+            }
+
             if ( pnlConfigPanel.Visible )
             {
                 ddlCountsType.SetValue( countsType );
