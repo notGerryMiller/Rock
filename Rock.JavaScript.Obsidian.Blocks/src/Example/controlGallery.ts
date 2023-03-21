@@ -151,7 +151,7 @@ import StepProgramPicker from "@Obsidian/Controls/stepProgramPicker";
 import StepStatusPicker from "@Obsidian/Controls/stepStatusPicker";
 import StepTypePicker from "@Obsidian/Controls/stepTypePicker";
 import StreakTypePicker from "@Obsidian/Controls/streakTypePicker";
-import Alert from "@Obsidian/Controls/alert.obs";
+import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
 import { AlertType } from "@Obsidian/Enums/Controls/alertType";
 import BadgeList from "@Obsidian/Controls/badgeList";
 import BadgePicker from "@Obsidian/Controls/badgePicker";
@@ -4700,12 +4700,12 @@ const badgePickerGallery = defineComponent({
 </GalleryAndResult>`
 });
 
-/** Demonstrates an alert list */
-const alertGallery = defineComponent({
-    name: "AlertGallery",
+/** Demonstrates an notification box */
+const notificationBoxGallery = defineComponent({
+    name: "NotificationBoxGallery",
     components: {
         GalleryAndResult,
-        Alert,
+        NotificationBox,
         DropDownList,
         CheckBox,
         TextBox
@@ -4718,13 +4718,13 @@ const alertGallery = defineComponent({
             onDismiss: () => alert('"dismiss" event fired. Parents are responsible for hiding the component.'),
             options,
             alertType: ref(AlertType.Default),
-            importCode: getControlImportPath("alert"),
-            exampleCode: `<Alert dismissable alertType="AlertType.Info" @dismiss="onDismiss" heading="Heading Text">
+            importCode: getSfcControlImportPath("notificationBox"),
+            exampleCode: `<NotificationBox dismissable alertType="AlertType.Info" @dismiss="onDismiss" heading="Heading Text">
     This is an alert!
     <template #details>
         Here's a place where you can place details that show up when you click "Show Details".
     </template>
-</Alert>`
+</NotificationBox>`
         };
     },
     template: `
@@ -4732,12 +4732,12 @@ const alertGallery = defineComponent({
     :importCode="importCode"
     :exampleCode="exampleCode" >
 
-    <Alert :dismissible="isDismissible" :alertType="alertType" @dismiss="onDismiss" :heading="heading">
+    <NotificationBox :dismissible="isDismissible" :alertType="alertType" @dismiss="onDismiss" :heading="heading">
         This is an alert!
         <template #details>
         Here's a place where you can place details that show up when you click "Show Details".
         </template>
-    </Alert>
+    </NotificationBox>
 
     <template #settings>
         <div class="row">
@@ -7242,7 +7242,7 @@ const contentChannelItemPickerGallery = defineComponent({
 
 
 const controlGalleryComponents: Record<string, Component> = [
-    alertGallery,
+    notificationBoxGallery,
     attributeValuesContainerGallery,
     badgeListGallery,
     fieldFilterEditorGallery,
