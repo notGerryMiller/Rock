@@ -177,9 +177,7 @@ namespace Rock.Utility
             }
 
             var service = new AttributeValueService( ( RockContext ) serviceInstance.Context );
-
-            var attributeValues = service.Queryable().Where( v =>
-                v.EntityId.HasValue );
+            var attributeValues = service.Queryable();
 
             AttributeCache attributeCache = null;
 
