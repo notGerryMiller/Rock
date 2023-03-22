@@ -56,33 +56,34 @@
     function getDistinctValues(): DistinctValue[] {
         const valueRows: Record<string | number, DistinctValue> = {};
         const field = props.column.field;
+        const rows = props.grid.rows;
 
         if (!field) {
             return [];
         }
 
         console.log(`${Date.now()}: Starting Process`);
-        for (let i = 0; i < props.rows.length; i++) {
-            const value = props.column.uniqueValue(props.rows[i], props.column);
+        for (let i = 0; i < rows.length; i++) {
+            const value = props.column.uniqueValue(rows[i], props.column);
 
             if (value && valueRows[value] === undefined) {
-                const quickFilterValue = props.column.quickFilterValue(props.rows[i], props.column) ?? "";
-                let filterValue = props.column.filterValue(props.rows[i], props.column);
+                const quickFilterValue = props.column.quickFilterValue(rows[i], props.column, props.grid) ?? "";
+                let filterValue = props.column.filterValue(rows[i], props.column);
 
                 if (filterValue === undefined) {
                     continue;
                 }
 
                 valueRows[value] = {
-                    row: props.rows[i],
+                    row: rows[i],
                     selected: false,
-                    sortValue: props.column.sortValue?.(props.rows[i], props.column) ?? "",
+                    sortValue: props.column.sortValue?.(rows[i], props.column) ?? "",
                     quickFilterValue: quickFilterValue.toLowerCase(),
                     filterValue
                 };
             }
         }
-        console.log(`${Date.now()}: Finished Process, ${Object.values(valueRows).length} unique values out of ${props.rows.length} rows.`);
+        console.log(`${Date.now()}: Finished Process, ${Object.values(valueRows).length} unique values out of ${rows.length} rows.`);
 
         return Object.values(valueRows);
     }
@@ -125,7 +126,7 @@
         }
     }
 
-    watch(() => props.rows, () => {
+    watch(() => props.grid.rows, () => {
         distinctValues.value = getDistinctValues();
     });
 

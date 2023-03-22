@@ -3,13 +3,13 @@
     <table class="grid-table table table-bordered table-striped table-hover table-obsidian" :class="{ 'table-sticky': props.stickyHeader }">
         <thead>
             <FilterHeaderRow v-model:filterValue="quickFilterValue"
-                                 :gridActions="gridActions"
-                                 :visibleColumnCount="visibleColumnCount" />
+                             :gridActions="gridActions"
+                             :visibleColumnCount="visibleColumnCount" />
 
             <ColumnHeaderRow :columns="visibleColumnDefinitions"
-                                 v-model:columnFilters="columnFilterValues"
-                                 v-model:columnSort="columnSortDirection"
-                                 :rows="rows" />
+                             v-model:columnFilters="columnFilterValues"
+                             v-model:columnSort="columnSortDirection"
+                             :rows="gridState.rows" />
         </thead>
 
         <tbody>
@@ -26,18 +26,18 @@
             </tr>
 
             <DataRows v-else
-                          :columns="visibleColumnDefinitions"
-                          :rows="visibleRows" />
+                      :columns="visibleColumnDefinitions"
+                      :rows="visibleRows" />
         </tbody>
 
         <tfoot>
             <PagerRow v-model:pageSize="pageSize"
-                          v-model:currentPage="currentPage"
-                          :pageCount="pageCount"
-                          :pageSizes="pageSizes"
-                          :message="pagerMessage"
-                          :visibleColumnCount="visibleColumnCount"
-                          :gridActions="gridActions" />
+                      v-model:currentPage="currentPage"
+                      :pageCount="pageCount"
+                      :pageSizes="pageSizes"
+                      :message="pagerMessage"
+                      :visibleColumnCount="visibleColumnCount"
+                      :gridActions="gridActions" />
         </tfoot>
     </table>
 </template>
@@ -192,164 +192,12 @@ table.table-obsidian th.grid-error > .alert {
     import DataRows from "./dataRows.partial.obs";
     import FilterHeaderRow from "./filterHeaderRow.partial.obs";
     import PagerRow from "./pagerRow.partial.obs";
-    import TextCell from "./Cells/textCell.partial";
-    import { computed, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
-    import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
-    import { resolveMergeFields } from "@Obsidian/Utility/lava";
+    import { computed, PropType, ref, shallowRef, toRaw, useSlots, watch } from "vue";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
-    import { GridCache, GridRowCache } from "@Obsidian/Core/Controls/grid";
-    import { GridAction, GridColumnDefinition, GridColumnFilter, GridState, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
+    import { getColumnDefinitions, GridRowCache, GridState } from "@Obsidian/Core/Controls/grid";
+    import { GridAction, GridColumnDefinition, IGridState } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
-    import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
-
-    function resolveDynamicText(text: string, mergeFields: Record<string, unknown>): string {
-        return resolveMergeFields(text, mergeFields);
-    }
-
-    function getQuickFilterValue(row: Record<string, unknown>, column: GridColumnDefinition, factory: ((row: Record<string, unknown>, column: GridColumnDefinition) => string | undefined)): string | undefined {
-        return gridState.rowCache.getOrAdd<string>(row, `${column.name}-quickFilterValue`, () => factory(row, column));
-    }
-
-    function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition[] {
-        const columns: GridColumnDefinition[] = [];
-
-        for (const node of columnNodes) {
-            const name = getVNodeProp<string>(node, "name");
-
-            if (!name) {
-                if (getVNodeProp<boolean>(node, "__attributeColumns") !== true) {
-                    continue;
-                }
-
-                const attributes = getVNodeProp<AttributeFieldDefinitionBag[]>(node, "attributes");
-                if (!attributes) {
-                    continue;
-                }
-
-                for (const attribute of attributes) {
-                    if (!attribute.name) {
-                        continue;
-                    }
-
-                    columns.push({
-                        name: attribute.name,
-                        title: attribute.title ?? undefined,
-                        field: attribute.name,
-                        uniqueValue: (r, c) => c.field ? String(r[c.field]) : "",
-                        sortValue: (r, c) => c.field ? String(r[c.field]) : undefined,
-                        quickFilterValue: (r, c) => getQuickFilterValue(r, c, () => c.field ? String(r[c.field]) : undefined),
-                        filterValue: (r, c) => c.field ? String(r[c.field]) : undefined,
-                        format: getVNodeProp<VNode>(node, "format") ?? TextCell,
-                        props: {},
-                        cache: new GridCache()
-                    });
-                }
-
-                continue;
-            }
-
-            const field = getVNodeProp<string>(node, "field");
-            let sortValue = getVNodeProp<ValueFormatterFunction | string>(node, "sortValue");
-
-            if (!sortValue) {
-                const sortField = getVNodeProp<string>(node, "sortField") || field;
-
-                sortValue = sortField ? (r) => String(r[sortField]) : undefined;
-            }
-            else if (typeof sortValue === "string") {
-                const template = sortValue;
-
-                sortValue = (row): string | undefined => {
-                    return resolveDynamicText(template, { row });
-                };
-            }
-
-            let quickFilterValue = getVNodeProp<((row: Record<string, unknown>, column: GridColumnDefinition) => string | undefined)>(node, "quickFilterValue");
-
-            if (!quickFilterValue) {
-                quickFilterValue = (r, c): string | undefined => {
-                    if (!c.field) {
-                        return undefined;
-                    }
-
-                    let v = r[c.field];
-
-                    if (typeof v === "string") {
-                        return v;
-                    }
-                    else if (typeof v === "number") {
-                        return v.toString();
-                    }
-
-
-                    else {
-                        return undefined;
-                    }
-                };
-            }
-            else if (typeof quickFilterValue === "string") {
-                const template = quickFilterValue;
-
-                quickFilterValue = (row): string | undefined => {
-                    return resolveDynamicText(template, { row });
-                };
-            }
-
-            let filterValue = getVNodeProp<((row: Record<string, unknown>, column: GridColumnDefinition) => unknown) | string>(node, "filterValue");
-
-            if (filterValue === undefined) {
-                filterValue = (r, c): unknown => {
-                    if (!c.field) {
-                        return undefined;
-                    }
-
-                    return r[c.field];
-                };
-            }
-            else if (typeof filterValue === "string") {
-                const template = filterValue;
-
-                filterValue = (row): string | undefined => {
-                    return resolveDynamicText(template, { row });
-                };
-            }
-
-            let uniqueValue = getVNodeProp<ValueFormatterFunction>(node, "uniqueValue");
-
-            if (!uniqueValue) {
-                uniqueValue = (r, c) => {
-                    if (!c.field || r[c.field] === undefined) {
-                        return undefined;
-                    }
-
-                    const v = r[c.field];
-
-                    if (typeof v === "string" || typeof v === "number") {
-                        return v;
-                    }
-
-                    return JSON.stringify(v);
-                };
-            }
-
-            columns.push({
-                name,
-                title: getVNodeProp<string>(node, "title"),
-                field,
-                format: node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? TextCell,
-                filter: getVNodeProp<GridColumnFilter>(node, "filter"),
-                uniqueValue,
-                sortValue,
-                filterValue,
-                quickFilterValue: (r, c) => quickFilterValue !== undefined ? getQuickFilterValue(r, c, quickFilterValue) : undefined,
-                props: getVNodeProps(node),
-                cache: new GridCache()
-            });
-        }
-
-        return columns;
-    }
 
     /*
      * 8/17/2022 - DSH
@@ -383,17 +231,13 @@ table.table-obsidian th.grid-error > .alert {
         console.log("test");
     }
 
-    defineExpose({doTest});
+    defineExpose({ doTest });
 
     const slots = useSlots();
 
-    const gridState: GridState = {
-        cache: new GridCache(),
-
-        rowCache: new GridRowCache(props.itemId),
-
-        rows: []
-    };
+    const gridState: IGridState = new GridState(
+        getColumnDefinitions(slots["default"]?.() ?? []),
+        props.itemId);
 
     const gridActions = ref<GridAction[]>([]);
     const currentPage = ref(1);
@@ -408,8 +252,9 @@ table.table-obsidian th.grid-error > .alert {
     const pageCount = ref(0);
     const pagerMessage = ref("");
     const visibleColumnDefinitions = ref<GridColumnDefinition[]>([]);
-    const rows = shallowRef<Record<string, unknown>[]>([]);
+    //const rows = shallowRef<Record<string, unknown>[]>([]);
     const columns = computed((): GridColumnDefinition[] => {
+        console.log("Calculating columns");
         return getColumnDefinitions(slots["default"]?.() ?? []);
     });
 
@@ -426,9 +271,9 @@ table.table-obsidian th.grid-error > .alert {
             const columns = toRaw(visibleColumnDefinitions.value);
             const quickFilterRawValue = quickFilterValue.value.toLowerCase();
 
-            const result = rows.value.filter(row => {
+            const result = gridState.rows.filter(row => {
                 const quickFilterMatch = !quickFilterRawValue || columns.some((column): boolean => {
-                    const value = column.quickFilterValue(row, column);
+                    const value = column.quickFilterValue(row, column, gridState);
 
                     if (value === undefined) {
                         return false;
@@ -554,15 +399,13 @@ table.table-obsidian th.grid-error > .alert {
 
         if (typeof props.data === "object") {
             const data = props.data;
-            rows.value = data.rows ?? [];
+            gridState.setDataRows(data.rows ?? []);
         }
         else if (typeof props.data === "function") {
             try {
                 const data = await props.data();
-                rows.value = data.rows ?? [];
 
-                gridState.rows = data.rows ?? [];
-                gridState.cache.clear();
+                gridState.setDataRows(data.rows ?? []);
             }
             catch (error) {
                 gridErrorMessage.value = error instanceof Error ? error.message : new String(error).toString();

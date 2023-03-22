@@ -15,10 +15,30 @@
 // </copyright>
 //
 
-import { PropType } from "vue";
+import { defineComponent, PropType, shallowRef, ShallowRef, VNode } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
-import { GridColumnFilter, GridColumnDefinition, GridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache } from "@Obsidian/Types/Controls/grid";
+import { GridColumnFilter, GridColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
+import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
+import { resolveMergeFields } from "@Obsidian/Utility/lava";
 import { deepEqual } from "@Obsidian/Utility/util";
+import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
+
+const defaultCell = defineComponent({
+    props: {
+        column: {
+            type: Object as PropType<GridColumnDefinition>,
+            required: true
+        },
+        row: {
+            type: Object as PropType<Record<string, unknown>>,
+            required: true
+        }
+    },
+
+    setup(props) {
+        return () => props.column.field ? props.row[props.column.field] : "";
+    }
+});
 
 // #region Standard Component Props
 
@@ -81,8 +101,8 @@ export const standardFilterProps: StandardFilterProps = {
         required: true
     },
 
-    rows: {
-        type: Array as PropType<Record<string, unknown>[]>,
+    grid: {
+        type: Object as PropType<IGridState>,
         required: true
     }
 };
@@ -121,7 +141,7 @@ export function pickExistingFilterMatches(needle: unknown, haystack: unknown): b
     return needle.some(n => deepEqual(n, haystack, true));
 }
 
-export function numberFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: GridState): boolean {
+export function numberFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridState): boolean {
     if (!needle || typeof needle !== "object") {
         return false;
     }
@@ -246,6 +266,150 @@ export function calculateColumnTopNRowValue(rows: Record<string, unknown>[], row
     else {
         return values[values.length - 1];
     }
+}
+
+function getOrAddRowCacheValue<T>(row: Record<string, unknown>, column: GridColumnDefinition, key: string, gridState: IGridState, factory: ((row: Record<string, unknown>, column: GridColumnDefinition) => T)): T {
+    return gridState.rowCache.getOrAdd<T>(row, `${column.name}-${key}`, () => factory(row, column));
+}
+
+export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition[] {
+    const columns: GridColumnDefinition[] = [];
+
+    for (const node of columnNodes) {
+        const name = getVNodeProp<string>(node, "name");
+
+        if (!name) {
+            if (getVNodeProp<boolean>(node, "__attributeColumns") !== true) {
+                continue;
+            }
+
+            const attributes = getVNodeProp<AttributeFieldDefinitionBag[]>(node, "attributes");
+            if (!attributes) {
+                continue;
+            }
+
+            for (const attribute of attributes) {
+                if (!attribute.name) {
+                    continue;
+                }
+
+                columns.push({
+                    name: attribute.name,
+                    title: attribute.title ?? undefined,
+                    field: attribute.name,
+                    uniqueValue: (r, c) => c.field ? String(r[c.field]) : "",
+                    sortValue: (r, c) => c.field ? String(r[c.field]) : undefined,
+                    quickFilterValue: (r, c, g) => getOrAddRowCacheValue(r, c, "quickFilterValue", g, () => c.field ? String(r[c.field]) : undefined),
+                    filterValue: (r, c) => c.field ? String(r[c.field]) : undefined,
+                    format: getVNodeProp<VNode>(node, "format") ?? defaultCell,
+                    props: {},
+                    cache: new GridCache()
+                });
+            }
+
+            continue;
+        }
+
+        const field = getVNodeProp<string>(node, "field");
+        let sortValue = getVNodeProp<ValueFormatterFunction | string>(node, "sortValue");
+
+        if (!sortValue) {
+            const sortField = getVNodeProp<string>(node, "sortField") || field;
+
+            sortValue = sortField ? (r) => String(r[sortField]) : undefined;
+        }
+        else if (typeof sortValue === "string") {
+            const template = sortValue;
+
+            sortValue = (row): string | undefined => {
+                return resolveMergeFields(template, { row });
+            };
+        }
+
+        let quickFilterValue = getVNodeProp<((row: Record<string, unknown>, column: GridColumnDefinition) => string | undefined)>(node, "quickFilterValue");
+
+        if (!quickFilterValue) {
+            quickFilterValue = (r, c): string | undefined => {
+                if (!c.field) {
+                    return undefined;
+                }
+
+                const v = r[c.field];
+
+                if (typeof v === "string") {
+                    return v;
+                }
+                else if (typeof v === "number") {
+                    return v.toString();
+                }
+
+
+                else {
+                    return undefined;
+                }
+            };
+        }
+        else if (typeof quickFilterValue === "string") {
+            const template = quickFilterValue;
+
+            quickFilterValue = (row): string | undefined => {
+                return resolveMergeFields(template, { row });
+            };
+        }
+
+        let filterValue = getVNodeProp<((row: Record<string, unknown>, column: GridColumnDefinition) => unknown) | string>(node, "filterValue");
+
+        if (filterValue === undefined) {
+            filterValue = (r, c): unknown => {
+                if (!c.field) {
+                    return undefined;
+                }
+
+                return r[c.field];
+            };
+        }
+        else if (typeof filterValue === "string") {
+            const template = filterValue;
+
+            filterValue = (row): string | undefined => {
+                return resolveMergeFields(template, { row });
+            };
+        }
+
+        let uniqueValue = getVNodeProp<ValueFormatterFunction>(node, "uniqueValue");
+
+        if (!uniqueValue) {
+            uniqueValue = (r, c) => {
+                if (!c.field || r[c.field] === undefined) {
+                    return undefined;
+                }
+
+                const v = r[c.field];
+
+                if (typeof v === "string" || typeof v === "number") {
+                    return v;
+                }
+
+                return JSON.stringify(v);
+            };
+        }
+
+        columns.push({
+            name,
+            title: getVNodeProp<string>(node, "title"),
+            field,
+            format: node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? defaultCell,
+            filter: getVNodeProp<GridColumnFilter>(node, "filter"),
+            uniqueValue,
+            sortValue,
+            filterValue,
+            quickFilterValue: (r, c, g) => quickFilterValue !== undefined ? getOrAddRowCacheValue(r, c, "quickFilterValue", g, quickFilterValue) : undefined,
+            props: getVNodeProps(node),
+            cache: new GridCache()
+        });
+    }
+
+    return columns;
 }
 
 // #endregion
@@ -409,7 +573,7 @@ export class GridRowCache implements IGridRowCache {
         const rowKey = this.getRowKey(row);
 
         if (!rowKey) {
-            return undefined;
+            return factory();
         }
 
         return this.cache.getOrAdd(rowKey, () => new GridCache()).getOrAdd<T>(key, factory);
@@ -424,6 +588,152 @@ export class GridRowCache implements IGridRowCache {
 
         return this.cache.getOrAdd(rowKey, () => new GridCache()).addOrReplace<T>(key, value);
     }
+}
+
+export class GridState implements IGridState {
+    internalRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public filteredRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public sortedRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public visibleRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public columns: GridColumnDefinition[] = [];
+
+    public cache: IGridCache = new GridCache();
+
+    public rowCache: IGridRowCache;
+
+    constructor(columns: GridColumnDefinition[], itemIdKey: string | undefined) {
+        this.rowCache = new GridRowCache(itemIdKey);
+        this.columns = columns;
+    }
+
+    get rows(): Record<string, unknown>[] {
+        return this.internalRows.value;
+    }
+
+    public setDataRows(rows: Record<string, unknown>[]): void {
+        this.internalRows.value = rows;
+        this.cache.clear();
+        this.rowCache.clear();
+    }
+
+    // updateFilteredRows(): void {
+    //     const start = Date.now();
+    //     if (columns.value.length > 0) {
+    //         const columns = toRaw(visibleColumnDefinitions.value);
+    //         const quickFilterRawValue = quickFilterValue.value.toLowerCase();
+
+    //         const result = gridState.rows.filter(row => {
+    //             const quickFilterMatch = !quickFilterRawValue || columns.some((column): boolean => {
+    //                 const value = column.quickFilterValue(row, column);
+
+    //                 if (value === undefined) {
+    //                     return false;
+    //                 }
+
+    //                 return value.toLowerCase().includes(quickFilterRawValue);
+    //             });
+
+    //             const filtersMatch = columns.every(column => {
+    //                 if (!column.filter) {
+    //                     return true;
+    //                 }
+
+    //                 const columnFilterValue = columnFilterValues.value[column.name];
+
+    //                 if (columnFilterValue === undefined) {
+    //                     return true;
+    //                 }
+
+    //                 const value: unknown = column.filterValue(row, column);
+
+    //                 if (value === undefined) {
+    //                     return false;
+    //                 }
+
+    //                 return column.filter.matches(columnFilterValue, value, column, gridState);
+    //             });
+
+    //             return quickFilterMatch && filtersMatch;
+    //         });
+
+    //         filteredRows = result;
+    //     }
+    //     else {
+    //         filteredRows = [];
+    //     }
+    //     console.log(`Filtering took ${Date.now() - start}ms.`);
+
+    //     updateSortedRows();
+    //     updatePageCount();
+    //     updatePagerMessage();
+    // }
+
+    // function updateSortedRows(): void {
+    //     const sortDirection = columnSortDirection.value;
+
+    //     if (!sortDirection) {
+    //         sortedRows = filteredRows;
+    //         updateVisibleRows();
+
+    //         return;
+    //     }
+
+    //     const start = Date.now();
+    //     const column = visibleColumnDefinitions.value.find(c => c.name === sortDirection.column);
+    //     const order = sortDirection.isDescending ? -1 : 1;
+
+    //     if (!column) {
+    //         throw new Error("Invalid sort definition");
+    //     }
+
+    //     const sortValue = column.sortValue;
+
+    //     // Pre-process each row to calculate the sort value. Otherwise it will
+    //     // be calculated exponentially during sort. This provides a serious
+    //     // performance boost when sorting Lava columns.
+    //     const rows = filteredRows.map(r => {
+    //         let value: string | number | undefined;
+
+    //         if (sortValue) {
+    //             value = sortValue(r, column);
+    //         }
+    //         else {
+    //             value = undefined;
+    //         }
+
+    //         return {
+    //             row: r,
+    //             value
+    //         };
+    //     });
+
+    //     rows.sort((a, b) => {
+    //         if (a.value === undefined) {
+    //             return -order;
+    //         }
+    //         else if (b.value === undefined) {
+    //             return order;
+    //         }
+    //         else if (a.value < b.value) {
+    //             return -order;
+    //         }
+    //         else if (a.value > b.value) {
+    //             return order;
+    //         }
+    //         else {
+    //             return 0;
+    //         }
+    //     });
+
+    //     sortedRows = rows.map(r => r.row);
+
+    //     console.log(`sortedRows took ${Date.now() - start}ms.`);
+    //     updateVisibleRows();
+    // }
 }
 
 // #endregion

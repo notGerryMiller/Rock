@@ -15,14 +15,14 @@
 // </copyright>
 //
 
-import { Component, PropType, VNode } from "vue";
+import { Component, PropType, ShallowRef, VNode } from "vue";
 
 /**
  * Defines a generic grid cache object. This can be used to store and get
  * data from a cache. The cache is unique to the grid instance so there is
  * no concern of multiple grids conflicting.
  */
-export type IGridCache = {
+export interface IGridCache {
     /**
      * Removes all values from the cache.
      */
@@ -74,14 +74,14 @@ export type IGridCache = {
      * @returns The value that was placed into the cache.
      */
     addOrReplace<T = unknown>(key: string, value: T): T;
-};
+}
 
 /**
  * Defines a grid cache object used for row data. This can be used to store and
  * get data from cache for a specific row. The cache is unique to the grid
  * instance so there is no concern of multiple grids conflicting.
  */
-export type IGridRowCache = {
+export interface IGridRowCache {
     /**
      * Removes all values for all rows from the cache.
      */
@@ -145,15 +145,25 @@ export type IGridRowCache = {
      * @returns The value that was placed into the cache.
      */
     addOrReplace<T = unknown>(row: Record<string, unknown>, key: string, value: T): T;
-};
+}
 
-export type GridState = {
-    cache: IGridCache;
+export interface IGridState {
+    readonly cache: IGridCache;
 
-    rowCache: IGridRowCache;
+    readonly rowCache: IGridRowCache;
 
-    rows: Record<string, unknown>[];
-};
+    readonly columns: GridColumnDefinition[];
+
+    readonly rows: Record<string, unknown>[];
+
+    readonly filteredRows: ShallowRef<Record<string, unknown>[]>;
+
+    readonly sortedRows: ShallowRef<Record<string, unknown>[]>;
+
+    readonly visibleRows: ShallowRef<Record<string, unknown>[]>;
+
+    setDataRows(rows: Record<string, unknown>[]): void;
+}
 
 /** A function that will be called in response to an action. */
 export type GridActionCallback = (event: Event) => void | Promise<void>;
@@ -162,7 +172,7 @@ export type GridActionCallback = (event: Event) => void | Promise<void>;
  * A function that will be called in order to determine if a row matches the
  * filtering request for the column.
  */
-export type GridColumnFilterMatchesCallback = (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: GridState) => boolean;
+export type GridColumnFilterMatchesCallback = (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridState) => boolean;
 
 export type StandardCellProps = {
     column: {
@@ -187,8 +197,8 @@ export type StandardFilterProps = {
         required: true
     },
 
-    rows: {
-        type: PropType<Record<string, unknown>[]>,
+    grid: {
+        type: PropType<IGridState>,
         required: true
     }
 };
@@ -239,7 +249,7 @@ export type GridColumnDefinition = {
     format: VNode | Component;
 
     /** Gets the value to use when filtering on the quick filter. */
-    quickFilterValue: (row: Record<string, unknown>, column: GridColumnDefinition) => string | undefined;
+    quickFilterValue: (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | undefined;
 
     /**
      * Gets the unique value representation of the cell value. For example,

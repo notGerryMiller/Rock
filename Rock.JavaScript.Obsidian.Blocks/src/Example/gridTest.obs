@@ -65,11 +65,10 @@
 <script setup lang="ts">
     // #region Imports
     import { useConfigurationValues, useInvokeBlockAction } from "@Obsidian/Utility/block";
-    import { computed,ref } from "vue";
+    import { ref } from "vue";
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
-    import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
     import Grid, { AttributeColumns, BooleanColumn, ColoredBadgeColumn, Column, DateColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
 
     // Putting this here as an example of how to call methods on components.
@@ -99,9 +98,7 @@
         "false": "#cc0000"
     };
 
-    const attributeFields = computed((): AttributeFieldDefinitionBag[] => {
-        return configuration.gridDefinition.attributeFields ?? [];
-    });
+    const attributeFields = configuration.gridDefinition.attributeFields ?? [];
 
     const loadGridData = async (): Promise<GridDataBag> => {
         const result = await invokeBlockAction<GridDataBag>("GetGridData");
