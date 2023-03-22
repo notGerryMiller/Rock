@@ -14,7 +14,7 @@
 // limitations under the License.
 // </copyright>
 
-import { AsyncComponentLoader, Component, ComponentPublicInstance, defineAsyncComponent as vueDefineAsyncComponent, ExtractPropTypes, PropType, reactive, ref, Ref, watch, WatchOptions } from "vue";
+import { AsyncComponentLoader, Component, ComponentPublicInstance, defineAsyncComponent as vueDefineAsyncComponent, ExtractPropTypes, PropType, reactive, ref, Ref, VNode, watch, WatchOptions } from "vue";
 import { deepEqual } from "./util";
 import { useSuspense } from "./suspense";
 import { newGuid } from "./guid";
@@ -406,3 +406,71 @@ export function propertyRef<T>(value: T, propertyName: string): ExtendedRef<T> {
 }
 
 // #endregion Extended Refs
+
+// #region VNode Helpers
+
+/**
+ * Retrieves a single prop value from a VNode object. If the prop is explicitely
+ * specified in the DOM then it will be returned. Otherwise the component's
+ * prop default values are checked. If there is a default value it will be
+ * returned.
+ *
+ * @param node The node whose property value is being requested.
+ * @param propName The name of the property whose value is being requested.
+ * @returns The value of the property or `undefined` if it was not set.
+ */
+export function getVNodeProp<T>(node: VNode, propName: string): T | undefined {
+    // Check if the prop was specified in the DOM declaration.
+    if (node.props && node.props[propName] !== undefined) {
+        return node.props[propName] as T;
+    }
+
+    // Now look to see if the backing component has defined a prop with that
+    // name and provided a default value.
+    if (typeof node.type === "object" && typeof node.type["props"] === "object") {
+        const defaultProps = node.type["props"] as Record<string, unknown>;
+        const defaultProp = defaultProps[propName];
+
+        if (defaultProp && typeof defaultProp === "object" && defaultProp["default"] !== undefined) {
+            return defaultProp["default"] as T;
+        }
+    }
+
+    return undefined;
+}
+
+/**
+ * Retrieves all prop values from a VNode object. First all default values
+ * from the component are retrieved. Then any specified on the DOM will be used
+ * to override those default values.
+ *
+ * @param node The node whose property values are being requested.
+ * @returns An object that contains all props and values for the node.
+ */
+export function getVNodeProps(node: VNode): Record<string, unknown> {
+    const props: Record<string, unknown> = {};
+
+    // Get all default values from the backing component's defined props.
+    if (typeof node.type === "object" && typeof node.type["props"] === "object") {
+        const defaultProps = node.type["props"] as Record<string, unknown>;
+
+        for (const p in defaultProps) {
+            const defaultProp = defaultProps[p];
+
+            if (defaultProp && typeof defaultProp === "object" && defaultProp["default"] !== undefined) {
+                props[p] = defaultProp["default"];
+            }
+        }
+    }
+
+    // Override with any values specified on the DOM declaration.
+    if (node.props) {
+        for (const p in node.props) {
+            props[p] = node.props[p];
+        }
+    }
+
+    return props;
+}
+
+// #endregion

@@ -194,6 +194,7 @@ table.table-obsidian th.grid-error > .alert {
     import PagerRow from "./pagerRow.partial.obs";
     import TextCell from "./Cells/textCell.partial";
     import { computed, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
+    import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
     import { resolveMergeFields } from "@Obsidian/Utility/lava";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
@@ -201,48 +202,6 @@ table.table-obsidian th.grid-error > .alert {
     import { GridAction, GridColumnDefinition, GridColumnFilter, GridState, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
-
-    function getVNodeProp<T>(node: VNode, propName: string): T | undefined {
-        if (node.props && node.props[propName] !== undefined) {
-            return node.props[propName] as T;
-        }
-
-        if (typeof node.type === "object" && typeof node.type["props"] === "object") {
-            const defaultProps = node.type["props"] as Record<string, unknown>;
-            const defaultProp = defaultProps[propName];
-            if (defaultProp && typeof defaultProp === "object" && defaultProp["default"] !== undefined) {
-                return defaultProp["default"] as T;
-            }
-        }
-
-        return undefined;
-    }
-
-    function getVNodeProps(node: VNode): Record<string, unknown> {
-        const props: Record<string, unknown> = {};
-
-        // Get all default values.
-        if (typeof node.type === "object" && typeof node.type["props"] === "object") {
-            const defaultProps = node.type["props"] as Record<string, unknown>;
-
-            for (const p in defaultProps) {
-                const defaultProp = defaultProps[p];
-
-                if (defaultProp && typeof defaultProp === "object" && defaultProp["default"] !== undefined) {
-                    props[p] = defaultProp["default"];
-                }
-            }
-        }
-
-        // Get specified values.
-        if (node.props) {
-            for (const p in node.props) {
-                props[p] = node.props[p];
-            }
-        }
-
-        return props;
-    }
 
     function resolveDynamicText(text: string, mergeFields: Record<string, unknown>): string {
         return resolveMergeFields(text, mergeFields);
