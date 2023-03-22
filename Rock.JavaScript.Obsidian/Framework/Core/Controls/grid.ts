@@ -17,7 +17,7 @@
 
 import { PropType } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
-import { IGridColumnFilter, GridColumnDefinition, IGridData, StandardFilterProps, StandardCellProps } from "@Obsidian/Types/Controls/grid";
+import { GridColumnFilter, GridColumnDefinition, GridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache } from "@Obsidian/Types/Controls/grid";
 import { deepEqual } from "@Obsidian/Utility/util";
 
 // #region Standard Component Props
@@ -49,7 +49,7 @@ export const standardColumnProps = {
     },
 
     filter: {
-        type: Object as PropType<IGridColumnFilter>,
+        type: Object as PropType<GridColumnFilter>,
         required: false
     },
 
@@ -121,7 +121,7 @@ export function pickExistingFilterMatches(needle: unknown, haystack: unknown): b
     return needle.some(n => deepEqual(n, haystack, true));
 }
 
-export function numberFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridData): boolean {
+export function numberFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: GridState): boolean {
     if (!needle || typeof needle !== "object") {
         return false;
     }
@@ -245,6 +245,184 @@ export function calculateColumnTopNRowValue(rows: Record<string, unknown>[], row
     }
     else {
         return values[values.length - 1];
+    }
+}
+
+// #endregion
+
+// #region Classes
+
+/**
+ * Default implementation used for caching data with Grid.
+ *
+ * @private This class is meant for internal use only.
+ */
+export class GridCache implements IGridCache {
+    /** The private cache data storage. */
+    private cacheData: Record<string, unknown> = {};
+
+    public clear(): void {
+        this.cacheData = {};
+    }
+
+    public remove(key: string): void {
+        if (key in this.cacheData) {
+            delete this.cacheData[key];
+        }
+    }
+
+    public get<T = unknown>(key: string): T | undefined {
+        if (key in this.cacheData) {
+            return <T>this.cacheData[key];
+        }
+        else {
+            return undefined;
+        }
+    }
+
+    public getOrAdd<T = unknown>(key: string, factory: () => T): T;
+    public getOrAdd<T = unknown>(key: string, factory: () => T | undefined): T | undefined;
+    public getOrAdd<T = unknown>(key: string, factory: () => T | undefined): T | undefined {
+        if (key in this.cacheData) {
+            return <T>this.cacheData[key];
+        }
+        else {
+            const value = factory();
+
+            if (value !== undefined) {
+                this.cacheData[key] = value;
+            }
+
+            return value;
+        }
+    }
+
+    public addOrReplace<T = unknown>(key: string, value: T): T {
+        this.cacheData[key] = value;
+
+        return value;
+    }
+}
+
+/**
+ * Default implementation used for caching grid row data.
+ *
+ * @private This class is meant for internal use only.
+ */
+export class GridRowCache implements IGridRowCache {
+    /** The internal cache object used to find the cached row data. */
+    private cache: IGridCache = new GridCache();
+
+    /** The key name to use on the row objects to find the row identifier. */
+    private rowItemIdKey?: string;
+
+    /**
+     * Creates a new grid row cache object that provides caching for each row.
+     * This is used by other parts of the grid to cache expensive calculations
+     * that pertain to a single row.
+     *
+     * @param itemIdKey The key name to use on the row objects to find the row identifier.
+     */
+    public constructor(itemIdKey: string | undefined) {
+        this.rowItemIdKey = itemIdKey;
+    }
+
+    /**
+     * Gets the key to use on the internal cache object to load the cached data
+     * for the specified row.
+     *
+     * @param row The row whose identifier key is needed.
+     *
+     * @returns The identifier key of the row or `undefined` if it could not be determined.
+     */
+    private getRowKey(row: Record<string, unknown>): string | undefined {
+        if (!this.rowItemIdKey) {
+            return undefined;
+        }
+
+        const rowKey = row[this.rowItemIdKey];
+
+        if (typeof rowKey === "string") {
+            return rowKey;
+        }
+        else if (typeof rowKey === "number") {
+            return `${rowKey}`;
+        }
+        else {
+            return undefined;
+        }
+    }
+
+    /**
+     * Sets the key that will be used when accessing a row to determine its
+     * unique identifier in the grid. This will also clear all cached data.
+     *
+     * @param itemIdKey The key name to use on the row objects to find the row identifier.
+     */
+    public setRowItemIdKey(itemIdKey: string | undefined): void {
+        if (this.rowItemIdKey !== itemIdKey) {
+            this.rowItemIdKey = itemIdKey;
+            this.clear();
+        }
+    }
+
+    public clear(): void {
+        this.cache.clear();
+    }
+
+    public remove(row: Record<string, unknown>): void;
+    public remove(row: Record<string, unknown>, key: string): void;
+    public remove(row: Record<string, unknown>, key?: string): void {
+        const rowKey = this.getRowKey(row);
+
+        if (!rowKey) {
+            return;
+        }
+
+        const cacheRow = this.cache.get<GridCache>(rowKey);
+
+        if (!cacheRow) {
+            return;
+        }
+
+        if (!key) {
+            cacheRow.clear();
+        }
+        else {
+            cacheRow.remove(key);
+        }
+    }
+
+    public get<T = unknown>(row: Record<string, unknown>, key: string): T | undefined {
+        const rowKey = this.getRowKey(row);
+
+        if (!rowKey) {
+            return undefined;
+        }
+
+        return this.cache.getOrAdd(rowKey, () => new GridCache()).get<T>(key);
+    }
+
+    public getOrAdd<T = unknown>(row: Record<string, unknown>, key: string, factory: () => T): T;
+    public getOrAdd<T = unknown>(row: Record<string, unknown>, key: string, factory: () => T | undefined): T | undefined;
+    public getOrAdd<T = unknown>(row: Record<string, unknown>, key: string, factory: () => T | undefined): T | undefined {
+        const rowKey = this.getRowKey(row);
+
+        if (!rowKey) {
+            return undefined;
+        }
+
+        return this.cache.getOrAdd(rowKey, () => new GridCache()).getOrAdd<T>(key, factory);
+    }
+
+    public addOrReplace<T = unknown>(row: Record<string, unknown>, key: string, value: T): T {
+        const rowKey = this.getRowKey(row);
+
+        if (!rowKey) {
+            return value;
+        }
+
+        return this.cache.getOrAdd(rowKey, () => new GridCache()).addOrReplace<T>(key, value);
     }
 }
 

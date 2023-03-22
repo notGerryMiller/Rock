@@ -193,31 +193,14 @@ table.table-obsidian th.grid-error > .alert {
     import FilterHeaderRow from "./filterHeaderRow.partial.obs";
     import PagerRow from "./pagerRow.partial.obs";
     import TextCell from "./Cells/textCell.partial";
-    import { computed, defineComponent, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
+    import { computed, PropType, ref, shallowRef, toRaw, useSlots, VNode, watch } from "vue";
     import { resolveMergeFields } from "@Obsidian/Utility/lava";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
-    import { GridAction, GridColumnDefinition, IGridColumnFilter, IGridData, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
+    import { GridCache, GridRowCache } from "@Obsidian/Core/Controls/grid";
+    import { GridAction, GridColumnDefinition, GridColumnFilter, GridState, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
-
-    type RowCacheItem = {
-        quickFilterValue?: string | null;
-
-        sortValue?: string | number | null;
-
-        uniqueValue?: string | number | null;
-
-        filterValue?: unknown | null;
-    };
-
-    // const startStamp = Date.now();
-    // const mergeF = { row: { name: { firstName: "Daniel", lastName: "Hazelbaker" }}};
-    // for (let i = 0; i < 10000; i++) {
-    //     resolveMergeFields("{{ row.name.firstName }} {{ row.name.lastName }}", mergeF);
-    // }
-    // const endStamp = Date.now();
-    // console.log(`Test took ${endStamp - startStamp}ms.`);
 
     function getVNodeProp<T>(node: VNode, propName: string): T | undefined {
         if (node.props && node.props[propName] !== undefined) {
@@ -265,35 +248,8 @@ table.table-obsidian th.grid-error > .alert {
         return resolveMergeFields(text, mergeFields);
     }
 
-    function getOrUpdateQuickFilterValueCache(row: Record<string, unknown>, column: GridColumnDefinition, factory: ((row: Record<string, unknown>, column: GridColumnDefinition) => string | undefined)): string | undefined {
-        if (props.itemId === undefined) {
-            return factory(row, column);
-        }
-
-        const rowId = row[props.itemId];
-
-        if (typeof rowId !== "string" && typeof rowId !== "number") {
-            return factory(row, column);
-        }
-
-        const cacheKey = `row-item-${rowId}-${column.name}`;
-        let cache = gridData.cache[cacheKey] as RowCacheItem | undefined;
-
-        if (!cache) {
-            cache = {
-                quickFilterValue: null,
-                sortValue: null,
-                uniqueValue: null,
-                filterValue: null
-            };
-            gridData.cache[cacheKey] = cache;
-        }
-
-        if (cache.quickFilterValue === null) {
-            cache.quickFilterValue = factory(row, column);
-        }
-
-        return cache.quickFilterValue;
+    function getQuickFilterValue(row: Record<string, unknown>, column: GridColumnDefinition, factory: ((row: Record<string, unknown>, column: GridColumnDefinition) => string | undefined)): string | undefined {
+        return gridState.rowCache.getOrAdd<string>(row, `${column.name}-quickFilterValue`, () => factory(row, column));
     }
 
     function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition[] {
@@ -323,10 +279,11 @@ table.table-obsidian th.grid-error > .alert {
                         field: attribute.name,
                         uniqueValue: (r, c) => c.field ? String(r[c.field]) : "",
                         sortValue: (r, c) => c.field ? String(r[c.field]) : undefined,
-                        quickFilterValue: (r, c) => getOrUpdateQuickFilterValueCache(r, c, () => c.field ? String(r[c.field]) : undefined),
+                        quickFilterValue: (r, c) => getQuickFilterValue(r, c, () => c.field ? String(r[c.field]) : undefined),
                         filterValue: (r, c) => c.field ? String(r[c.field]) : undefined,
                         format: getVNodeProp<VNode>(node, "format") ?? TextCell,
-                        props: {}
+                        props: {},
+                        cache: new GridCache()
                     });
                 }
 
@@ -422,12 +379,13 @@ table.table-obsidian th.grid-error > .alert {
                 title: getVNodeProp<string>(node, "title"),
                 field,
                 format: node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? TextCell,
-                filter: getVNodeProp<IGridColumnFilter>(node, "filter"),
+                filter: getVNodeProp<GridColumnFilter>(node, "filter"),
                 uniqueValue,
                 sortValue,
                 filterValue,
-                quickFilterValue: (r, c) => quickFilterValue !== undefined ? getOrUpdateQuickFilterValueCache(r, c, quickFilterValue) : undefined,
-                props: getVNodeProps(node)
+                quickFilterValue: (r, c) => quickFilterValue !== undefined ? getQuickFilterValue(r, c, quickFilterValue) : undefined,
+                props: getVNodeProps(node),
+                cache: new GridCache()
             });
         }
 
@@ -470,8 +428,10 @@ table.table-obsidian th.grid-error > .alert {
 
     const slots = useSlots();
 
-    const gridData: IGridData = {
-        cache: {},
+    const gridState: GridState = {
+        cache: new GridCache(),
+
+        rowCache: new GridRowCache(props.itemId),
 
         rows: []
     };
@@ -535,7 +495,7 @@ table.table-obsidian th.grid-error > .alert {
                         return false;
                     }
 
-                    return column.filter.matches(columnFilterValue, value, column, gridData);
+                    return column.filter.matches(columnFilterValue, value, column, gridState);
                 });
 
                 return quickFilterMatch && filtersMatch;
@@ -642,8 +602,8 @@ table.table-obsidian th.grid-error > .alert {
                 const data = await props.data();
                 rows.value = data.rows ?? [];
 
-                gridData.rows = data.rows ?? [];
-                gridData.cache = {};
+                gridState.rows = data.rows ?? [];
+                gridState.cache.clear();
             }
             catch (error) {
                 gridErrorMessage.value = error instanceof Error ? error.message : new String(error).toString();
@@ -671,6 +631,12 @@ table.table-obsidian th.grid-error > .alert {
 
     watch([currentPage, pageSize], () => {
         updateVisibleRows();
+    });
+
+    watch(() => props.itemId, () => {
+        if (gridState.rowCache instanceof GridRowCache) {
+            gridState.rowCache.setRowItemIdKey(props.itemId);
+        }
     });
 
     gridActions.value.push({

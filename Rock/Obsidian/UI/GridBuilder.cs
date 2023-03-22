@@ -114,11 +114,15 @@ namespace Rock.Obsidian.UI
             var rows = items
                 .Select( item =>
                 {
-                    var row = new Dictionary<string, object>();
+                    // Allocate the row dictionary for the correct size. This
+                    // is nearly twice as fast as creating an empty dictionary
+                    // and then adding keys to it (175ns vs 289ns). And we are
+                    // going to be doing this potentially 100,000 times. That
+                    // could save a total of 12ms.
+                    var row = new Dictionary<string, object>( fieldKeys.Length );
 
-                    for ( int i = 0; i < fieldKeys.Length; i++ )
+                    foreach ( var key in fieldKeys )
                     {
-                        var key = fieldKeys[i];
                         var value = _fieldActions[key]( item );
 
                         row[key] = value;

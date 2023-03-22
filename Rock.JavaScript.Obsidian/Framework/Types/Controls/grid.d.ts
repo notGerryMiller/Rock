@@ -17,11 +17,143 @@
 
 import { Component, PropType, VNode } from "vue";
 
-export interface IGridData {
-    cache: Record<string, unknown>;
+/**
+ * Defines a generic grid cache object. This can be used to store and get
+ * data from a cache. The cache is unique to the grid instance so there is
+ * no concern of multiple grids conflicting.
+ */
+export type IGridCache = {
+    /**
+     * Removes all values from the cache.
+     */
+    clear(): void;
+
+    /**
+     * Removes a single item from the cache.
+     *
+     * @param key The identifier of the value to be removed from the cache.
+     */
+    remove(key: string): void;
+
+    /**
+     * Gets an existing value from the cache.
+     *
+     * @param key The identifier of the value.
+     *
+     * @returns The value found in the cache or undefined if it was not found.
+     */
+    get<T = unknown>(key: string): T | undefined;
+
+    /**
+     * Gets an existing value from cache or adds it into the cache.
+     *
+     * @param key The identifier of the cached value.
+     * @param factory The function to call when adding the value.
+     *
+     * @returns The existing value or the newly created value.
+     */
+    getOrAdd<T = unknown>(key: string, factory: () => T): T;
+
+    /**
+     * Gets an existing value form cache or adds it into the cache.
+     *
+     * @param key The identifier of the cached value.
+     * @param factory The function to call when adding the value. If undefined is returned then the value is not added to the cache.
+     *
+     * @returns The existing value or the newly created value. Returns undefined if it could not be found or created.
+     */
+    getOrAdd<T = unknown>(key: string, factory: () => T | undefined): T | undefined;
+
+    /**
+     * Adds the value if it does not exist in cache or replaces the existing
+     * value in cache with the new value.
+     *
+     * @param key The identifier of the cached value.
+     * @param value The value that should be placed into the cache.
+     *
+     * @returns The value that was placed into the cache.
+     */
+    addOrReplace<T = unknown>(key: string, value: T): T;
+};
+
+/**
+ * Defines a grid cache object used for row data. This can be used to store and
+ * get data from cache for a specific row. The cache is unique to the grid
+ * instance so there is no concern of multiple grids conflicting.
+ */
+export type IGridRowCache = {
+    /**
+     * Removes all values for all rows from the cache.
+     */
+    clear(): void;
+
+    /**
+     * Removes all the cached values for the specified row.
+     *
+     * @param row The row whose cached values should be removed.
+     */
+    remove(row: Record<string, unknown>): void;
+
+    /**
+     * Removes a single item from the cache.
+     *
+     * @param row The row whose cached key value should be removed.
+     * @param key The identifier of the value to be removed from the row cache.
+     */
+    remove(row: Record<string, unknown>, key: string): void;
+
+    /**
+     * Gets an existing value from the cache.
+     *
+     * @param row The row whose cached key value should be retrieved.
+     * @param key The identifier of the value.
+     *
+     * @returns The value found in the cache or undefined if it was not found.
+     */
+    get<T = unknown>(row: Record<string, unknown>, key: string): T | undefined;
+
+    /**
+     * Gets an existing value from cache or adds it into the cache.
+     *
+     * @param row The row whose cached key value should be retrieved.
+     * @param key The identifier of the cached value.
+     * @param factory The function to call when adding the value.
+     *
+     * @returns The existing value or the newly created value.
+     */
+    getOrAdd<T = unknown>(row: Record<string, unknown>, key: string, factory: () => T): T;
+
+    /**
+     * Gets an existing value form cache or adds it into the cache.
+     *
+     * @param row The row whose cached key value should be retrieved.
+     * @param key The identifier of the cached value.
+     * @param factory The function to call when adding the value. If undefined is returned then the value is not added to the cache.
+     *
+     * @returns The existing value or the newly created value. Returns undefined if it could not be found or created.
+     */
+    getOrAdd<T = unknown>(row: Record<string, unknown>, key: string, factory: () => T | undefined): T | undefined;
+
+    /**
+     * Adds the value if it does not exist in cache or replaces the existing
+     * value in cache with the new value.
+     *
+     * @param row The row whose cached key value should be retrieved.
+     * @param key The identifier of the cached value.
+     * @param value The value that should be added into the cache.
+     *
+     * @returns The value that was placed into the cache.
+     */
+    addOrReplace<T = unknown>(row: Record<string, unknown>, key: string, value: T): T;
+};
+
+export type GridState = {
+    cache: IGridCache;
+
+    rowCache: IGridRowCache;
 
     rows: Record<string, unknown>[];
-}
+};
 
 /** A function that will be called in response to an action. */
 export type GridActionCallback = (event: Event) => void | Promise<void>;
@@ -30,7 +162,7 @@ export type GridActionCallback = (event: Event) => void | Promise<void>;
  * A function that will be called in order to determine if a row matches the
  * filtering request for the column.
  */
-export type GridColumnFilterMatchesCallback = (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridData) => boolean;
+export type GridColumnFilterMatchesCallback = (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: GridState) => boolean;
 
 export type StandardCellProps = {
     column: {
@@ -121,18 +253,20 @@ export type GridColumnDefinition = {
     /** Gets the value to use when filtering. */
     filterValue: (row: Record<string, unknown>, column: GridColumnDefinition) => unknown | undefined;
 
-    filter?: IGridColumnFilter;
+    filter?: GridColumnFilter;
 
     props: Record<string, unknown>;
+
+    cache: IGridCache;
 };
 
 export type ValueFormatterFunction = (row: Record<string, unknown>, column: GridColumnDefinition) => string | number | undefined;
 
-export interface IGridColumnFilter {
+export type GridColumnFilter = {
     component: Component;
 
     matches: GridColumnFilterMatchesCallback;
-}
+};
 
 export type FilterComponentProps = {
     modelValue: {

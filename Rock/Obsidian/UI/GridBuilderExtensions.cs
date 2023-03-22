@@ -140,12 +140,20 @@ namespace Rock.Obsidian.UI
             // Add all the action URLs for the current site.
             builder.AddDefinitionAction( definition =>
             {
-                var communicationUrl = "/Communication/((EntitySetId))";
-                var site = block.Site;
+                var communicationUrl = "/Communication/{EntitySetId}";
+                SiteCache site;
 
                 if ( block.Page != null )
                 {
                     site = SiteCache.Get( block.Page.SiteId );
+                }
+                else if ( block.Layout != null )
+                {
+                    site = block.Layout.Site;
+                }
+                else
+                {
+                    site = block.Site;
                 }
 
                 if ( site != null )
@@ -154,17 +162,17 @@ namespace Rock.Obsidian.UI
 
                     if ( pageRef.PageId > 0 )
                     {
-                        pageRef.Parameters.AddOrReplace( "CommunicationId", "((EntitySetId))" );
+                        pageRef.Parameters.AddOrReplace( "CommunicationId", "{EntitySetId}" );
                         communicationUrl = pageRef.BuildUrl();
                     }
                 }
 
                 definition.ActionUrls.AddOrIgnore( GridActionUrlKey.Communicate, communicationUrl );
-                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.MergePerson, "/PersonMerge/((EntitySetId))" );
-                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.MergeBusiness, "/BusinessMerge/((EntitySetId))" );
-                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.BulkUpdate, "/BulkUpdate/((EntitySetId))" );
-                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.LaunchWorkflow, "/LaunchWorkflows/((EntitySetId))" );
-                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.MergeTemplate, "/MergeTemplate/((EntitySetId))" );
+                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.MergePerson, "/PersonMerge/{EntitySetId}" );
+                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.MergeBusiness, "/BusinessMerge/{EntitySetId}" );
+                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.BulkUpdate, "/BulkUpdate/{EntitySetId}" );
+                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.LaunchWorkflow, "/LaunchWorkflows/{EntitySetId}" );
+                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.MergeTemplate, "/MergeTemplate/{EntitySetId}" );
             } );
 
             return builder;

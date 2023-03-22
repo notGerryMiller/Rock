@@ -37,7 +37,7 @@ import PickExistingFilter from "./Grid/Filters/pickExistingFilter.partial.obs";
 import TextFilter from "./Grid/Filters/textFilter.partial.obs";
 
 import { numberFilterMatches, pickExistingFilterMatches, textFilterMatches } from "@Obsidian/Core/Controls/grid";
-import { IGridColumnFilter } from "@Obsidian/Types/Controls/grid";
+import { GridColumnFilter } from "@Obsidian/Types/Controls/grid";
 
 // Export main Grid component.
 export default Grid;
@@ -70,19 +70,19 @@ export {
     TextFilter
 };
 
-export const textValueFilter: IGridColumnFilter = {
+export const textValueFilter: GridColumnFilter = {
      component: TextFilter,
 
      matches: textFilterMatches
 };
 
-export const pickExistingValueFilter: IGridColumnFilter = {
+export const pickExistingValueFilter: GridColumnFilter = {
     component: PickExistingFilter,
 
     matches: pickExistingFilterMatches
 };
 
-export const numberValueFilter: IGridColumnFilter = {
+export const numberValueFilter: GridColumnFilter = {
     component: NumberFilter,
 
     matches: numberFilterMatches
