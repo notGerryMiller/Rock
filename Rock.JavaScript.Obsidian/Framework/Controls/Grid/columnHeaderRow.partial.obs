@@ -14,7 +14,7 @@
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import { PropType, ref } from "vue";
     import ColumnHeaderCell from "./columnHeaderCell.partial.obs";
-    import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnSort, GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         columns: {
@@ -28,7 +28,7 @@
         },
 
         columnSort: {
-            type: Object as PropType<{ column: string, isDescending: boolean }>,
+            type: Object as PropType<ColumnSort>,
             required: false
         },
 

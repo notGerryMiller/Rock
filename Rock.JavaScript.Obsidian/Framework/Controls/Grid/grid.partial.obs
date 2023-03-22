@@ -192,11 +192,11 @@ table.table-obsidian th.grid-error > .alert {
     import DataRows from "./dataRows.partial.obs";
     import FilterHeaderRow from "./filterHeaderRow.partial.obs";
     import PagerRow from "./pagerRow.partial.obs";
-    import { computed, PropType, ref, shallowRef, toRaw, useSlots, watch } from "vue";
+    import { computed, PropType, ref, shallowRef, useSlots, watch } from "vue";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
     import { getColumnDefinitions, GridRowCache, GridState } from "@Obsidian/Core/Controls/grid";
-    import { GridAction, GridColumnDefinition, IGridState } from "@Obsidian/Types/Controls/grid";
+    import { ColumnSort, GridAction, GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
 
     /*
@@ -235,7 +235,7 @@ table.table-obsidian th.grid-error > .alert {
 
     const slots = useSlots();
 
-    const gridState: IGridState = new GridState(
+    const gridState: GridState = new GridState(
         getColumnDefinitions(slots["default"]?.() ?? []),
         props.itemId);
 
@@ -247,151 +247,29 @@ table.table-obsidian th.grid-error > .alert {
     const loadingData = ref(false);
     const gridErrorMessage = ref("");
     const columnFilterValues = ref<Record<string, unknown | undefined>>({});
-    const columnSortDirection = ref<{ column: string, isDescending: boolean } | undefined>();
+    const columnSortDirection = ref<ColumnSort | undefined>();
     const visibleRows = shallowRef<Record<string, unknown>[]>([]);
     const pageCount = ref(0);
     const pagerMessage = ref("");
     const visibleColumnDefinitions = ref<GridColumnDefinition[]>([]);
-    //const rows = shallowRef<Record<string, unknown>[]>([]);
-    const columns = computed((): GridColumnDefinition[] => {
-        console.log("Calculating columns");
-        return getColumnDefinitions(slots["default"]?.() ?? []);
-    });
-
-    let filteredRows: Record<string, unknown>[] = [];
-    let sortedRows: Record<string, unknown>[] = [];
+    const columns: GridColumnDefinition[] = getColumnDefinitions(slots["default"]?.() ?? []);
 
     const visibleColumnCount = computed((): number => {
         return visibleColumnDefinitions.value.length;
     });
 
-    function updateFilteredRows(): void {
-        const start = Date.now();
-        if (columns.value.length > 0) {
-            const columns = toRaw(visibleColumnDefinitions.value);
-            const quickFilterRawValue = quickFilterValue.value.toLowerCase();
-
-            const result = gridState.rows.filter(row => {
-                const quickFilterMatch = !quickFilterRawValue || columns.some((column): boolean => {
-                    const value = column.quickFilterValue(row, column, gridState);
-
-                    if (value === undefined) {
-                        return false;
-                    }
-
-                    return value.toLowerCase().includes(quickFilterRawValue);
-                });
-
-                const filtersMatch = columns.every(column => {
-                    if (!column.filter) {
-                        return true;
-                    }
-
-                    const columnFilterValue = columnFilterValues.value[column.name];
-
-                    if (columnFilterValue === undefined) {
-                        return true;
-                    }
-
-                    const value: unknown = column.filterValue(row, column);
-
-                    if (value === undefined) {
-                        return false;
-                    }
-
-                    return column.filter.matches(columnFilterValue, value, column, gridState);
-                });
-
-                return quickFilterMatch && filtersMatch;
-            });
-
-            filteredRows = result;
-        }
-        else {
-            filteredRows = [];
-        }
-        console.log(`Filtering took ${Date.now() - start}ms.`);
-
-        updateSortedRows();
-        updatePageCount();
-        updatePagerMessage();
-    }
-
-    function updateSortedRows(): void {
-        const sortDirection = columnSortDirection.value;
-
-        if (!sortDirection) {
-            sortedRows = filteredRows;
-            updateVisibleRows();
-
-            return;
-        }
-
-        const start = Date.now();
-        const column = visibleColumnDefinitions.value.find(c => c.name === sortDirection.column);
-        const order = sortDirection.isDescending ? -1 : 1;
-
-        if (!column) {
-            throw new Error("Invalid sort definition");
-        }
-
-        const sortValue = column.sortValue;
-
-        // Pre-process each row to calculate the sort value. Otherwise it will
-        // be calculated exponentially during sort. This provides a serious
-        // performance boost when sorting Lava columns.
-        const rows = filteredRows.map(r => {
-            let value: string | number | undefined;
-
-            if (sortValue) {
-                value = sortValue(r, column);
-            }
-            else {
-                value = undefined;
-            }
-
-            return {
-                row: r,
-                value
-            };
-        });
-
-        rows.sort((a, b) => {
-            if (a.value === undefined) {
-                return -order;
-            }
-            else if (b.value === undefined) {
-                return order;
-            }
-            else if (a.value < b.value) {
-                return -order;
-            }
-            else if (a.value > b.value) {
-                return order;
-            }
-            else {
-                return 0;
-            }
-        });
-
-        sortedRows = rows.map(r => r.row);
-
-        console.log(`sortedRows took ${Date.now() - start}ms.`);
-        updateVisibleRows();
-    }
-
     function updateVisibleRows(): void {
         const startIndex = (currentPage.value - 1) * pageSize.value;
 
-        visibleRows.value = sortedRows.slice(startIndex, startIndex + pageSize.value);
+        visibleRows.value = gridState.sortedRows.value.slice(startIndex, startIndex + pageSize.value);
     }
 
     function updatePageCount(): void {
-        pageCount.value = Math.ceil(filteredRows.length / pageSize.value);
+        pageCount.value = Math.ceil(gridState.filteredRows.value.length / pageSize.value);
     }
 
     function updatePagerMessage(): void {
-        pagerMessage.value = `${asFormattedString(filteredRows.length)} ${pluralConditional(filteredRows.length, "Group", "Groups")}`;
+        pagerMessage.value = `${asFormattedString(gridState.filteredRows.value.length)} ${pluralConditional(gridState.filteredRows.value.length, "Group", "Groups")}`;
     }
 
     async function updateGridData(): Promise<void> {
@@ -412,8 +290,7 @@ table.table-obsidian th.grid-error > .alert {
             }
         }
 
-        visibleColumnDefinitions.value = columns.value;
-        updateFilteredRows();
+        visibleColumnDefinitions.value = columns;
 
         loadingData.value = false;
     }
@@ -424,11 +301,11 @@ table.table-obsidian th.grid-error > .alert {
 
     watch([quickFilterValue, columnFilterValues], () => {
         currentPage.value = 1;
-        updateFilteredRows();
+        gridState.setFilters(quickFilterValue.value, columnFilterValues.value);
     });
 
     watch(columnSortDirection, () => {
-        updateSortedRows();
+        gridState.setSort(columnSortDirection.value);
     });
 
     watch([currentPage, pageSize], () => {
@@ -439,6 +316,12 @@ table.table-obsidian th.grid-error > .alert {
         if (gridState.rowCache instanceof GridRowCache) {
             gridState.rowCache.setRowItemIdKey(props.itemId);
         }
+    });
+
+    watch(gridState.sortedRows, () => {
+        updateVisibleRows();
+        updatePageCount();
+        updatePagerMessage();
     });
 
     gridActions.value.push({

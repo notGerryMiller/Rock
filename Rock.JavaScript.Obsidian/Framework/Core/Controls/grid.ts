@@ -17,7 +17,7 @@
 
 import { defineComponent, PropType, shallowRef, ShallowRef, VNode } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
-import { GridColumnFilter, GridColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ValueFormatterFunction } from "@Obsidian/Types/Controls/grid";
+import { GridColumnFilter, GridColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ValueFormatterFunction, ColumnSort } from "@Obsidian/Types/Controls/grid";
 import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
 import { resolveMergeFields } from "@Obsidian/Utility/lava";
 import { deepEqual } from "@Obsidian/Utility/util";
@@ -591,15 +591,23 @@ export class GridRowCache implements IGridRowCache {
 }
 
 export class GridState implements IGridState {
-    internalRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+    private internalRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
 
-    public filteredRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+    private quickFilter: string = "";
 
-    public sortedRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+    private columnFilters: Record<string, unknown | undefined> = {};
 
-    public visibleRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+    private columnSort?: ColumnSort;
 
-    public columns: GridColumnDefinition[] = [];
+    public readonly filteredRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public readonly sortedRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public readonly visibleRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public readonly columns: GridColumnDefinition[];
+
+    public visibleColumns: GridColumnDefinition[];
 
     public cache: IGridCache = new GridCache();
 
@@ -608,6 +616,7 @@ export class GridState implements IGridState {
     constructor(columns: GridColumnDefinition[], itemIdKey: string | undefined) {
         this.rowCache = new GridRowCache(itemIdKey);
         this.columns = columns;
+        this.visibleColumns = columns;
     }
 
     get rows(): Record<string, unknown>[] {
@@ -618,122 +627,131 @@ export class GridState implements IGridState {
         this.internalRows.value = rows;
         this.cache.clear();
         this.rowCache.clear();
+        this.updateFilteredRows();
     }
 
-    // updateFilteredRows(): void {
-    //     const start = Date.now();
-    //     if (columns.value.length > 0) {
-    //         const columns = toRaw(visibleColumnDefinitions.value);
-    //         const quickFilterRawValue = quickFilterValue.value.toLowerCase();
+    public setFilters(quickFilter: string | undefined, columnFilters: Record<string, unknown> | undefined): void {
+        this.quickFilter = quickFilter ?? "";
+        this.columnFilters = columnFilters ?? {};
+        this.updateFilteredRows();
+    }
 
-    //         const result = gridState.rows.filter(row => {
-    //             const quickFilterMatch = !quickFilterRawValue || columns.some((column): boolean => {
-    //                 const value = column.quickFilterValue(row, column);
+    public setSort(columnSort: ColumnSort | undefined): void {
+        this.columnSort = columnSort;
+        this.updateSortedRows();
+    }
 
-    //                 if (value === undefined) {
-    //                     return false;
-    //                 }
+    private updateFilteredRows(): void {
+        const start = Date.now();
+        if (this.columns.length > 0) {
+            const columns = this.visibleColumns;
+            const quickFilterRawValue = this.quickFilter.toLowerCase();
 
-    //                 return value.toLowerCase().includes(quickFilterRawValue);
-    //             });
+            const result = this.rows.filter(row => {
+                const quickFilterMatch = !quickFilterRawValue || columns.some((column): boolean => {
+                    const value = column.quickFilterValue(row, column, this);
 
-    //             const filtersMatch = columns.every(column => {
-    //                 if (!column.filter) {
-    //                     return true;
-    //                 }
+                    if (value === undefined) {
+                        return false;
+                    }
 
-    //                 const columnFilterValue = columnFilterValues.value[column.name];
+                    return value.toLowerCase().includes(quickFilterRawValue);
+                });
 
-    //                 if (columnFilterValue === undefined) {
-    //                     return true;
-    //                 }
+                const filtersMatch = columns.every(column => {
+                    if (!column.filter) {
+                        return true;
+                    }
 
-    //                 const value: unknown = column.filterValue(row, column);
+                    const columnFilterValue = this.columnFilters[column.name];
 
-    //                 if (value === undefined) {
-    //                     return false;
-    //                 }
+                    if (columnFilterValue === undefined) {
+                        return true;
+                    }
 
-    //                 return column.filter.matches(columnFilterValue, value, column, gridState);
-    //             });
+                    const value: unknown = column.filterValue(row, column);
 
-    //             return quickFilterMatch && filtersMatch;
-    //         });
+                    if (value === undefined) {
+                        return false;
+                    }
 
-    //         filteredRows = result;
-    //     }
-    //     else {
-    //         filteredRows = [];
-    //     }
-    //     console.log(`Filtering took ${Date.now() - start}ms.`);
+                    return column.filter.matches(columnFilterValue, value, column, this);
+                });
 
-    //     updateSortedRows();
-    //     updatePageCount();
-    //     updatePagerMessage();
-    // }
+                return quickFilterMatch && filtersMatch;
+            });
 
-    // function updateSortedRows(): void {
-    //     const sortDirection = columnSortDirection.value;
+            this.filteredRows.value = result;
+        }
+        else {
+            this.filteredRows.value = [];
+        }
 
-    //     if (!sortDirection) {
-    //         sortedRows = filteredRows;
-    //         updateVisibleRows();
+        console.log(`Filtering took ${Date.now() - start}ms.`);
 
-    //         return;
-    //     }
+        this.updateSortedRows();
+    }
 
-    //     const start = Date.now();
-    //     const column = visibleColumnDefinitions.value.find(c => c.name === sortDirection.column);
-    //     const order = sortDirection.isDescending ? -1 : 1;
+    private updateSortedRows(): void {
+        const columnSort = this.columnSort;
 
-    //     if (!column) {
-    //         throw new Error("Invalid sort definition");
-    //     }
+        if (!columnSort) {
+            this.sortedRows.value = this.filteredRows.value;
 
-    //     const sortValue = column.sortValue;
+            return;
+        }
 
-    //     // Pre-process each row to calculate the sort value. Otherwise it will
-    //     // be calculated exponentially during sort. This provides a serious
-    //     // performance boost when sorting Lava columns.
-    //     const rows = filteredRows.map(r => {
-    //         let value: string | number | undefined;
+        const start = Date.now();
+        const column = this.visibleColumns.find(c => c.name === columnSort.column);
+        const order = columnSort.isDescending ? -1 : 1;
 
-    //         if (sortValue) {
-    //             value = sortValue(r, column);
-    //         }
-    //         else {
-    //             value = undefined;
-    //         }
+        if (!column) {
+            throw new Error("Invalid sort definition");
+        }
 
-    //         return {
-    //             row: r,
-    //             value
-    //         };
-    //     });
+        const sortValue = column.sortValue;
 
-    //     rows.sort((a, b) => {
-    //         if (a.value === undefined) {
-    //             return -order;
-    //         }
-    //         else if (b.value === undefined) {
-    //             return order;
-    //         }
-    //         else if (a.value < b.value) {
-    //             return -order;
-    //         }
-    //         else if (a.value > b.value) {
-    //             return order;
-    //         }
-    //         else {
-    //             return 0;
-    //         }
-    //     });
+        // Pre-process each row to calculate the sort value. Otherwise it will
+        // be calculated exponentially during sort. This provides a serious
+        // performance boost when sorting Lava columns.
+        const rows = this.filteredRows.value.map(r => {
+            let value: string | number | undefined;
 
-    //     sortedRows = rows.map(r => r.row);
+            if (sortValue) {
+                value = sortValue(r, column);
+            }
+            else {
+                value = undefined;
+            }
 
-    //     console.log(`sortedRows took ${Date.now() - start}ms.`);
-    //     updateVisibleRows();
-    // }
+            return {
+                row: r,
+                value
+            };
+        });
+
+        rows.sort((a, b) => {
+            if (a.value === undefined) {
+                return -order;
+            }
+            else if (b.value === undefined) {
+                return order;
+            }
+            else if (a.value < b.value) {
+                return -order;
+            }
+            else if (a.value > b.value) {
+                return order;
+            }
+            else {
+                return 0;
+            }
+        });
+
+        this.sortedRows.value = rows.map(r => r.row);
+
+        console.log(`sortedRows took ${Date.now() - start}ms.`);
+    }
 }
 
 // #endregion

@@ -294,3 +294,9 @@ export type FilterComponentProps = {
         required: true
     }
 };
+
+export type ColumnSort = {
+    column: string;
+
+    isDescending: boolean;
+};
