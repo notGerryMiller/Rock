@@ -15,7 +15,7 @@
 // </copyright>
 //
 
-import { defineComponent, PropType, shallowRef, ShallowRef, VNode } from "vue";
+import { defineComponent, isReactive, PropType, shallowRef, ShallowRef, unref, VNode, watch } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
 import { GridColumnFilter, GridColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ValueFormatterFunction, ColumnSort } from "@Obsidian/Types/Controls/grid";
 import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
@@ -624,6 +624,29 @@ export class GridState implements IGridState {
     }
 
     public setDataRows(rows: Record<string, unknown>[]): void {
+        console.log("start reactive check");
+        // Need to watch entire rows array. This can be
+        // conditional on rows being reactive first.
+        // then when rows changes, check each row to see
+        // if it is being watched and add a watcher.
+        // Any rows that no longer exist have the watcher removed.
+        watch(() => rows, () => {
+            console.log("array change");
+        }, { deep: true });
+        for (let i = 0; i < rows.length; i++) {
+            if (isReactive(rows[i])) {
+                const row = rows[i];
+
+                watch(() => row, () => {
+                    this.rowCache.remove(row);
+                    console.log("Row changed", row);
+                    this.updateFilteredRows();
+                }, {
+                    deep: true
+                });
+            }
+        }
+        console.log("end reactive check");
         this.internalRows.value = rows;
         this.cache.clear();
         this.rowCache.clear();
